@@ -65,7 +65,7 @@ class wiski_plot(object):
     gw_elev = gw_elev.rename(columns = {'station_name':'Station Name', 'station_no':'Station Number'})
 
     example:
-    x = conda_scripts.gwplot_wiski.wiski_plot('SRP0723')
+    x = wiski_plot('SRP0723')
 
     x.plot_gw()
 
@@ -73,7 +73,11 @@ class wiski_plot(object):
 
     '''
 
-    def __init__(self, station, pars=None, ax=None):
+    def __init__(self, station = None, pars=None):
+
+        if station is None:
+            print('setting station to Son0001')
+            station = 'Son0001'
 
         self.station = station
         self.yearend = pars
@@ -82,7 +86,6 @@ class wiski_plot(object):
         # af.set_proxy()
 
         self.gw_elev = None
-        self.ax = ax
         self.pressure_trans = None
         self.bad_meas = None
         self.manual_meas = None
@@ -158,7 +161,7 @@ class wiski_plot(object):
     def plot_gw(self, plot_wet=True, gw_basin='SRP', seasonal=True, plot_dry=True,
                 limit_trans2manual_dates=False, remove_pt=False, xlims=None, y_axis_range_min=150):
         '''
-        plot_wet = plot backgorund wet/dry
+        plot_wet = plot backgorund wet/dry (not implemented)
         gw_basin = ['SRP','SON','PET'] basin from which wet/dry record will be plot
         seasonal = to take the seasonal value to plot, ie spring and fall
         plot_dry =
