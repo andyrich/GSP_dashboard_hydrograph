@@ -17,7 +17,7 @@ app.layout = html.Div([
 )
 def update_input_from_url(search):
     if search:
-        # Parse the URL to extract the 'input_string' parameter
+        # Parse the URL to extract the 'station_name' parameter
         params = urllib.parse.parse_qs(search[1:])
         input_string = params.get('station_name', ['DefaultString'])[0]
         return input_string
