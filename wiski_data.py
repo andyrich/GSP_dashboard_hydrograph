@@ -204,7 +204,7 @@ class wiski_plot(object):
         #     x.calc_wet();
         #     wetness = x.rain;
 
-        limax = [0, 1, 0, 1]
+        # limax = [0, 1, 0, 1]
 
         alldat = pd.DataFrame()
         for _, pname in self.gw_elev.iterrows():
@@ -232,22 +232,18 @@ class wiski_plot(object):
 
             if f.shape[0] > 0:
                 # plot the gw data
-                # f.resample("1D").mean().plot(ax=self.ax, style=style, color=color,
-                #                              label=pname[4], markersize=markersize, zorder=zorder)
                 fresh = f.resample("1D").mean().dropna()
-                print('heres the base data')
-                print(fresh)
                 if style == '-':
                     fig.add_trace(go.Scatter(x=fresh.index.values, y=fresh.loc[:,'Manual Measurement'],
                                              mode='lines',
-                                             name=pname[4],))
+                                             name=pname[4].replace("_"," "),))
                 else:
                     marker = go.scatter.Marker(size=5, symbol='square', )
                     marker.color = 'blue'
                     fig.add_trace(go.Scatter(x=fresh.index.values, y=fresh.loc[:,'Manual Measurement'],
                                              mode='markers', marker = marker ,
                                              fillcolor= 'black',
-                                             name=pname[4],))
+                                             name=pname[4].replace("_"," "),))
 
             # alldat = alldat.append(f)
             alldat = pd.concat([alldat, f])
@@ -262,30 +258,27 @@ class wiski_plot(object):
                 markers.color = 'green'
 
                 fig.add_trace(go.Scatter(x=fall.index, y=fall.loc[:,'Manual Measurement'],
-                                              mode='markers',
-                                         marker = markerf,
-                                              name= 'Fall', ))
-                fig.add_trace(go.Scatter(x=spring.index, y=spring.loc[:,'Manual Measurement'],
-                                              mode='markers',
-                                         marker=markers,
-                                              name= 'Spring', ))
+                                        mode='markers',
+                                        marker = markerf,
+                                        name= 'Fall', ))
 
-                # self.ax.plot(fall.index, fall.values, linestyle="None", marker='o', markersize=2,
-                #              markerfacecolor='orange', label='Fall', zorder=7)
-                # self.ax.plot(spring.index, spring.values, linestyle="None", marker='s', markersize=2,
-                #              markerfacecolor='green', label='Spring', zorder=6)
+                fig.add_trace(go.Scatter(x=spring.index, y=spring.loc[:,'Manual Measurement'],
+                                        mode='markers',
+                                        marker=markers,
+                                        name= 'Spring', ))
 
                 # plot the lines connecting the seasonal measurements
                 # tot = fall.append(spring).sort_index()
                 tot = pd.concat([fall, spring]).sort_index()
                 tot['date'] = tot.index
                 tot = tot.groupby(pd.Grouper(freq='2QS')).first()
-                # self.ax.plot(tot.date, tot.iloc[:, 0], label='_nolegend_', linestyle='-', color='grey', zorder=10)
-                print(tot.head())
+                # print(tot.head())
+                tot.index = tot.index+pd.Timedelta(365/4, "d")
+                # print(tot.head())
                 line = go.scatter.Line(color = 'grey')
                 fig.add_trace(go.Scatter(x=tot.index, y=tot.loc[:,'Manual Measurement'],
                                          showlegend=False,
-                                              name= '' ,line = line,))
+                                      name= '' ,line = line,))
 
                 seasonal = False
 
@@ -346,27 +339,10 @@ class wiski_plot(object):
         plot_bgcolor='rgb(50, 50, 50)',
         xaxis=dict(tickfont=dict(size=14, color='#FFFFFF')),
         yaxis=dict(tickfont=dict(size=14, color='#FFFFFF')),
-        legend=dict(x=0.1, y=1.1, orientation='h', font=dict(color='#FFFFFF')),
+        legend=dict( y=1.1, orientation='h', font=dict(color='#FFFFFF')),
         margin=dict(l=10, r=10, t=100, b=50)
         )
         fig.update_xaxes(title_font_family="Arial")
-        # fig.show()
-
-        # if plot_wet:
-        #     x.plot_bars(kind=None, plot_dry=plot_dry)
-        #
-        # self.ax.set_xlim(limax[0:2])
-        # self.ax.set_ylim(limax[2:])
-
-        # plot_help.baseline(self.ax, yearstart=yearstart_plot, yearend=year_end_plot, hard=True)
-        # plot_help.yearly_dates(self.ax)
-        # plot_help.yrange_(self.ax, min_range=y_axis_range_min)
-        # self.ax.grid(True)
-        # title = '{:}, {:}'.format(self.station, self.gw_elev['Station Number'].unique()[0])
-        # self.ax.set_ylabel('Groundwater Elevation (ft.)')
-        # self.ax.set_title(title)
-        # self.ax.legend(fontsize='small', ncol=2)
-        # self.ax.legend().get_texts()[0].set_text('Groundwater Elevation')
 
         return fig
 
