@@ -2,13 +2,16 @@
 
 ## how to run:
 
-1) make a virtual env like: python -m venv venv
+1) make a virtual env like: 
+
+    python -m venv venv
 
 
 2) activate the environment: 
+
     '''bin/Source/activate''' for windows
     
-    'source bin/Source/acrivate' for linux
+    source bin/Source/acrivate' for linux
     
 3) install the requirements
 
