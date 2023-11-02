@@ -7,6 +7,8 @@ import plotly.express as px
 
 app = dash.Dash(__name__)
 
+server = app.server
+
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
     dcc.Graph(id='interactive-plot')
