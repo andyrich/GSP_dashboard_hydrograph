@@ -25,22 +25,13 @@ def update_inputs_from_url(search):
         station_name = params.get('station_name', ['DefaultStation'])[0]
         plot_type = params.get('plot_type', ['MM'])[0]
         plot_options = params.get('plot_options', [''])[0]
+        plot_wet = params.get('plot_wet', ['True'])[0].lower() == 'true'
+        remove_pt = plot_type =='MM'
 
-        if plot_type == 'MM':
-            # fig = px.scatter(data, x='x', y='y', title=f'Scatter Plot for {station_name}',
-            #                  **parse_plot_options(plot_options))
-            print("UNDER MANUAL MEASUREMENT\n\n\n")
-            x = wiski_data.wiski_plot(station_name)
-            x.get_station_pars(remove_pt=True)
-            fig = x.plot_gw()
-        elif plot_type == 'PRESS':
-            print("UNDER PRESSURE\n\n\n")
-            x = wiski_data.wiski_plot(station_name)
-            x.get_station_pars(remove_pt=False)
-            fig = x.plot_gw()
-        else:
-            fig = px.scatter(data, x='x', y='y', title=f'Scatter Plot for {station_name}',
-                             **parse_plot_options(plot_options))
+        x = wiski_data.wiski_plot(station_name)
+        x.get_station_pars(remove_pt=remove_pt)
+        fig = x.plot_gw(plot_wet = plot_wet)
+
 
         return fig
     else:
