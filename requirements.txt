@@ -17,7 +17,7 @@ tenacity
 Werkzeug
 pandas
 lxml
-#geopandas
+geopandas
 #folium
 matplotlib
 #mapclassify
