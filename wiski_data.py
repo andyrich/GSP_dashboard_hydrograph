@@ -216,11 +216,37 @@ class wiski_plot(object):
             # for year in np.arange(2000,2018, 3):
             dfwet = dfwet.loc[dfwet.loc[:,'Type'] !='Normal']
 
+            wytext = []
+
             for wy,row in dfwet.iterrows():
                 ys = datetime.datetime(wy, 1, 1)
                 ye = datetime.datetime(wy+1, 1, 1)
-                fig.add_vrect(x0=ys, x1=ye, line_width=0, fillcolor=colors[row['Type']],
-                              layer="below", opacity=0.8)
+                if row['Type'] in wytext:
+                    fig.add_vrect(x0=ys, x1=ye, line_width=0, fillcolor=colors[row['Type']],
+                                  layer="below",
+                                  opacity=0.8,
+                                  legendgroup="group2",
+                                  legendgrouptitle_text="Water Year Type",
+                                  name=row['Type'],
+                                  showlegend=False
+                                  )
+                else:
+                    fig.add_vrect(x0=ys, x1=ye, line_width=0, fillcolor=colors[row['Type']],
+                                  layer="below",
+                                  opacity=0.8,
+                                  legendgroup="group2",
+                                  legendgrouptitle_text="Water Year Type",
+                                  name=row['Type'],
+                                  showlegend=True
+                                  )
+
+
+
+
+
+                wytext.extend([row['Type']])
+
+            print(wytext)
 
         # limax = [0, 1, 0, 1]
         print(self.gw_elev)
@@ -257,14 +283,20 @@ class wiski_plot(object):
                 if style == '-':
                     fig.add_trace(go.Scatter(x=fresh.index.values, y=fresh.loc[:,'Pressure Transducer'],
                                              mode='lines',
-                                             name=pname[4].replace("_"," "),))
+                                             name=pname[4].replace("_"," "),
+                                  legendgroup="group1",
+                                  legendgrouptitle_text="Groundwater Observations",)
+                                  )
                 else:
                     marker = go.scatter.Marker(size=5, symbol='square', )
                     marker.color = 'blue'
                     fig.add_trace(go.Scatter(x=fresh.index.values, y=fresh.loc[:,'Manual Measurement'],
                                              mode='markers', marker = marker ,
                                              fillcolor= 'black',
-                                             name=pname[4].replace("_"," "),))
+                                             name=pname[4].replace("_"," "),
+                    legendgroup = "group1",
+                                  legendgrouptitle_text = "Groundwater Observations",)
+                    )
 
             # alldat = alldat.append(f)
             alldat = pd.concat([alldat, f])
@@ -281,12 +313,18 @@ class wiski_plot(object):
                 fig.add_trace(go.Scatter(x=fall.index, y=fall.loc[:,'Manual Measurement'],
                                         mode='markers',
                                         marker = markerf,
-                                        name= 'Fall', ))
+                                        name= 'Fall',
+                                         legendgroup="group1",
+                                         legendgrouptitle_text="Groundwater Observations",
+                                         ))
 
                 fig.add_trace(go.Scatter(x=spring.index, y=spring.loc[:,'Manual Measurement'],
                                         mode='markers',
                                         marker=markers,
-                                        name= 'Spring', ))
+                                        name= 'Spring',
+                                         legendgroup="group1",
+                                         legendgrouptitle_text="Groundwater Observations",
+                                         ))
 
                 # plot the lines connecting the seasonal measurements
                 # tot = fall.append(spring).sort_index()
@@ -299,7 +337,10 @@ class wiski_plot(object):
                 line = go.scatter.Line(color = 'grey')
                 fig.add_trace(go.Scatter(x=tot.index, y=tot.loc[:,'Manual Measurement'],
                                          showlegend=False,
-                                      name= '' ,line = line,))
+                                      name= '' ,line = line,
+                                         legendgroup="group1",
+                                         legendgrouptitle_text="Groundwater Observations",
+                                         ))
 
                 seasonal = False
 
@@ -312,7 +353,10 @@ class wiski_plot(object):
                 fig.add_trace(go.Scatter(x=bad_meas.index, y=bad_meas.loc[:,'Value'],
                                               mode='markers',
                                          marker = markers,
-                                              name= 'Questionable Measurement', ))
+                                              name= 'Questionable Measurement',
+                                         legendgroup="group1",
+                                         legendgrouptitle_text="Groundwater Observations",
+                                         ))
                 # self.ax.plot(bad_meas.index, bad_meas.Value.values,
                 #              linestyle="None", marker='x', markersize=2,
                 #              markerfacecolor='red', markeredgecolor='red',
@@ -364,6 +408,11 @@ class wiski_plot(object):
         margin=dict(l=10, r=10, t=100, b=50)
         )
         fig.update_xaxes(title_font_family="Arial")
+        fig.layout.yaxis.gridcolor = 'grey'
+        fig.layout.xaxis.gridcolor = 'black'
+
+        fig.update_layout(legend=dict(groupclick="toggleitem",
+                                      y=-.1, orientation='h', font=dict(color='black')))
 
         return fig
 
