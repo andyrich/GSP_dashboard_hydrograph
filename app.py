@@ -88,4 +88,4 @@ def parse_plot_options(options):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True, port = 8054)
+    app.run_server(debug=True)
