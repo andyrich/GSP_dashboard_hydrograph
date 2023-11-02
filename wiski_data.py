@@ -206,9 +206,9 @@ class wiski_plot(object):
             dfwet = pd.DataFrame({"WY":years, "Type":wetdry})
             dw = pd.get_dummies(dfwet.Type,  prefix=None, dtype = int)
             dfwet = dfwet.join(dw)
-            print(dfwet.head())
+            # print(dfwet.head())
             dfwet = dfwet.set_index('WY')
-            print(dfwet.head())
+            # print(dfwet.head())
             colors = {'Very Wet':'cornflowerblue',
                       'Wet': "lightblue",
                       'Dry':"palegoldenrod",
@@ -223,12 +223,14 @@ class wiski_plot(object):
                               layer="below", opacity=0.8)
 
         # limax = [0, 1, 0, 1]
+        print(self.gw_elev)
 
         alldat = pd.DataFrame()
         for _, pname in self.gw_elev.iterrows():
             # f, bad_meas = self.get_gw_data(pname, start_year=1900)
+            print(f"\n\nloading the following:{pname}\n\n")
             f, bad_meas = gw_data.get_gw_data(pname, start_year=1900)
-
+            print('done loading\n\n')
             # change marker/plot type depending on if manual measurement
             if 'Manual' in pname.Param_reclass:
                 style = 's'
@@ -251,8 +253,9 @@ class wiski_plot(object):
             if f.shape[0] > 0:
                 # plot the gw data
                 fresh = f.resample("1D").mean().dropna()
+
                 if style == '-':
-                    fig.add_trace(go.Scatter(x=fresh.index.values, y=fresh.loc[:,'Manual Measurement'],
+                    fig.add_trace(go.Scatter(x=fresh.index.values, y=fresh.loc[:,'Pressure Transducer'],
                                              mode='lines',
                                              name=pname[4].replace("_"," "),))
                 else:
@@ -354,7 +357,7 @@ class wiski_plot(object):
         ),
         xaxis_title=dict(text='Date', font=dict(size=16, color='#FFFFFF')),
         yaxis_title=dict(text='Groundwater Elevation (feet)', font=dict(size=16, color='black')),
-        plot_bgcolor='lightgrey',
+        plot_bgcolor='white',
         xaxis=dict(tickfont=dict(size=14, color='black')),
         yaxis=dict(tickfont=dict(size=14, color='black')),
         legend=dict( y=1.1, orientation='h', font=dict(color='black')),

@@ -18,7 +18,7 @@ Werkzeug
 pandas
 lxml
 #geopandas
-folium
+#folium
 matplotlib
-mapclassify
+#mapclassify
 git+https://github.com/amacd31/kiwis_pie.git

@@ -22,7 +22,7 @@ def update_input_from_url(search):
         input_string = params.get('station_name', ['DefaultString'])[0]
         return input_string
     else:
-        return 'DefaultString'
+        return 'Son0001'
 
 @app.callback(
     Output('interactive-plot', 'figure'),
