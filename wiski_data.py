@@ -198,11 +198,29 @@ class wiski_plot(object):
             # self.fig = fig
         fig = go.Figure()
 
-        # if plot_wet:
-        #     numyears = 5
-        #     x = pw.plot_wet_per(gw_basin, '1-1-1900', '1-1-2020', 1.10, 3, self.ax, plot_obs=False);
-        #     x.calc_wet();
-        #     wetness = x.rain;
+        if plot_wet:
+            years = np.arange(1950, 2024)
+            aa_milne_arr = ['Very Wet', 'Wet', 'Normal', 'Dry', 'Very Dry']
+            wetdry = np.random.choice(aa_milne_arr, len(years))
+            # print(years)
+            dfwet = pd.DataFrame({"WY":years, "Type":wetdry})
+            dw = pd.get_dummies(dfwet.Type,  prefix=None, dtype = int)
+            dfwet = dfwet.join(dw)
+            print(dfwet.head())
+            dfwet = dfwet.set_index('WY')
+            print(dfwet.head())
+            colors = {'Very Wet':'cornflowerblue',
+                      'Wet': "lightblue",
+                      'Dry':"palegoldenrod",
+                    "Very Dry":"gold"}
+            # for year in np.arange(2000,2018, 3):
+            dfwet = dfwet.loc[dfwet.loc[:,'Type'] !='Normal']
+
+            for wy,row in dfwet.iterrows():
+                ys = datetime.datetime(wy, 1, 1)
+                ye = datetime.datetime(wy+1, 1, 1)
+                fig.add_vrect(x0=ys, x1=ye, line_width=0, fillcolor=colors[row['Type']],
+                              layer="below", opacity=0.8)
 
         # limax = [0, 1, 0, 1]
 
@@ -327,19 +345,19 @@ class wiski_plot(object):
             legend_title_font_color="green",
 
 
-        template='plotly_dark',
+        template='plotly',
         title=dict(
             text=self.station,
-            font=dict(size=24, color='#FFFFFF'),
+            font=dict(size=24, color='black'),
             x=0.5,
             y=0.9
         ),
         xaxis_title=dict(text='Date', font=dict(size=16, color='#FFFFFF')),
-        yaxis_title=dict(text='Groundwater Elevation (feet)', font=dict(size=16, color='#FFFFFF')),
-        plot_bgcolor='rgb(50, 50, 50)',
-        xaxis=dict(tickfont=dict(size=14, color='#FFFFFF')),
-        yaxis=dict(tickfont=dict(size=14, color='#FFFFFF')),
-        legend=dict( y=1.1, orientation='h', font=dict(color='#FFFFFF')),
+        yaxis_title=dict(text='Groundwater Elevation (feet)', font=dict(size=16, color='black')),
+        plot_bgcolor='lightgrey',
+        xaxis=dict(tickfont=dict(size=14, color='black')),
+        yaxis=dict(tickfont=dict(size=14, color='black')),
+        legend=dict( y=1.1, orientation='h', font=dict(color='black')),
         margin=dict(l=10, r=10, t=100, b=50)
         )
         fig.update_xaxes(title_font_family="Arial")
