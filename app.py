@@ -5,6 +5,19 @@ import urllib.parse
 import wiski_data
 import plotly.express as px
 
+
+'''
+query site with the following:
+https://soco-gsp-4a5fb7e8f7c3.herokuapp.com/?station_name=Son0001&plot_type=PRESS
+
+query strings like:
+        station_name
+        plot_type MM = manual measurements only (default), anything else will have pressure data
+        plot_options NA
+        plot_wet true/false
+        seasonal ie true/false
+
+'''
 app = dash.Dash(__name__)
 
 server = app.server
@@ -26,11 +39,13 @@ def update_inputs_from_url(search):
         plot_type = params.get('plot_type', ['MM'])[0]
         plot_options = params.get('plot_options', [''])[0]
         plot_wet = params.get('plot_wet', ['True'])[0].lower() == 'true'
+        seasonal = params.get('seasonal', ['True'])[0].lower() == 'true'
+
         remove_pt = plot_type =='MM'
 
         x = wiski_data.wiski_plot(station_name)
         x.get_station_pars(remove_pt=remove_pt)
-        fig = x.plot_gw(plot_wet = plot_wet)
+        fig = x.plot_gw(plot_wet = plot_wet, seasonal=seasonal)
 
 
         return fig
