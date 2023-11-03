@@ -215,7 +215,7 @@ def update_figure(colorscale, n_clicks):
     print(f"the name of the station is {title}")
     x =wiski_data.wiski_plot(colorscale)
 
-    x.get_station_pars(remove_pt=True)
+    x.get_station_pars(remove_pt=False)
     fig = x.plot_gw()
     # plotly_fig = mpl_to_plotly(fig)
 
