@@ -39,7 +39,7 @@ ts = pd.concat([k.get_timeseries_list(station_name = 'SRP*',
                 parametertype_name = "Groundw*",
                 return_fields = ['station_name', 'coverage']),
 
-                k.get_timeseries_list(station_no = 'LRR*',
+                k.get_timeseries_list(station_name = 'LRR*',
                 parametertype_name = "Groundw*",
                 return_fields = ['station_name', 'coverage'])])
 
