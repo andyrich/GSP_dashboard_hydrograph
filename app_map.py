@@ -12,7 +12,9 @@ import dash.html as html
 # import dash_core_components as dcc
 # import dash_html_components as html
 import pandas as pd
+import numpy as np
 import wiski_data
+import helper
 # dash.register_page(__name__, path='/')
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -20,26 +22,51 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 server = app.server
 
-df_meas = pd.read_csv(os.path.join('obs_data_for_website.csv'))
-df_meas.loc[:, 'Timestamp'] = pd.to_datetime(df_meas.loc[:, 'Timestamp'])
+# df_meas = pd.read_csv(os.path.join('obs_data_for_website.csv'))
+# df_meas.loc[:, 'Timestamp'] = pd.to_datetime(df_meas.loc[:, 'Timestamp'])
 
-path = os.path.join('allinfo_stations.csv')
+k = helper.get_kiwis()
+pars = k.get_parameter_list(stationparameter_name = "Groundw*")
 
-allinfo = pd.read_csv(path, index_col=[0])
-allinfo = allinfo.rename(columns={'Station Name.1': 'Station Name'})
-allinfo.loc[:, 'Station Name'] = allinfo.index
 
+
+# path = os.path.join('allinfo_stations.csv')
+
+# allinfo = pd.read_csv(path, index_col=[0])
+# allinfo = allinfo.rename(columns={'Station Name.1': 'Station Name'})
+# allinfo.loc[:, 'Station Name'] = allinfo.index
+
+allinfo = pd.concat([k.get_station_list(
+    return_fields =[ 'station_name', 'station_latitude','station_longitude', 'site_no','custom_attributes'],
+    parametertype_name = "Groundw*", site_no = 'SRP*'),
+k.get_station_list(
+ return_fields=['station_name', 'station_latitude', 'station_longitude',  'site_no','custom_attributes'],
+ parametertype_name="Groundw*", site_no='Son'),
+k.get_station_list(
+ return_fields=['station_name', 'station_latitude', 'station_longitude', 'site_no', 'custom_attributes'],
+ parametertype_name="Groundw*", site_no='PET*'),
+          k.get_station_list(
+              return_fields=['station_name', 'station_latitude', 'station_longitude', 'site_no', 'custom_attributes'],
+              parametertype_name="Groundw*", site_no='LRR*')
+]
+)
+allinfo = allinfo.rename(columns={'station_name': 'Station Name'})
+allinfo.index = allinfo.loc[:,'Station Name']
+
+print(allinfo.columns)
+print(allinfo.head())
 
 def get_loc(name):
-    loci = allinfo[allinfo.loc[:, 'Station Name'] == name].loc[:, 'Latitude':'Longitude']
+    loci = allinfo[allinfo.loc[:, 'Station Name'] == name].loc[:, ['Station Name','station_latitude','station_longitude']]
 
-    return [[loci.at[name, 'Latitude']], [loci.at[name, 'Longitude']]]
+    return [[loci.at[name, 'station_latitude']], [loci.at[name, 'station_longitude']]]
 
 
 all_options = {
-    'Santa Rosa Plain': sorted(df_meas.query("Site=='SRP'").station_name.unique()),
-    'Sonoma Valley': sorted(df_meas.query("Site=='SON'").station_name.unique()),
-    'Petaluma Valley': sorted(df_meas.query("Site=='PET'").station_name.unique())
+    'Santa Rosa Plain': sorted(allinfo.query("site_no=='SRP'").loc[:,'Station Name'].unique()),
+    'Sonoma Valley': sorted(allinfo.query("site_no=='Son'").loc[:,'Station Name'].unique()),
+    'Petaluma Valley': sorted(allinfo.query("site_no=='PET'").loc[:,'Station Name'].unique()),
+    'Lower Russian River': sorted(allinfo.query("site_no=='LRR'").loc[:,'Station Name'].unique())
 }
 
 
@@ -151,7 +178,8 @@ def set_table_value(available_options):
     #            fill_color='lavender',
     #            align='left'))])
 
-    vals = allinfo.loc[[cur], :'APN Number'].T.dropna().to_dict()
+    vals = allinfo.loc[[cur], :].T.dropna().to_dict()
+    # vals = allinfo.loc[[cur], :'APN Number'].T.dropna().to_dict()
     vals = vals[cur]
     d = [f"{k[0]}: {k[1]}" for k in vals.items()]
     mdown = '  \n'.join(d)
@@ -189,19 +217,20 @@ def set_table_value(available_options):
 def update_figure(colorscale, n_clicks):
     ctx = dash.callback_context
     if ctx.triggered[0]["prop_id"].split(".")[0] != "show-image":
+        print('preventing update')
         raise PreventUpdate
 
     if colorscale is None:
         dfi = pd.DataFrame(columns=["Timestamp", "Manual Measurement", 'name'])
-        colorscale = ""
+        colorscale = "Son0001"
     else:
         colorscale = colorscale['points'][0]['hovertext']
         print(colorscale)
 
-        dfi = df_meas.query(f"station_name=='{colorscale}'")
-
+        # dfi = df_meas.query(f"station_name=='{colorscale}'")
+    #
     title = f"{colorscale}"
-
+    print(f"the name of the station is {title}")
     x =wiski_data.wiski_plot(colorscale)
 
     x.get_station_pars(remove_pt=True)
@@ -225,20 +254,52 @@ def update_figure(colorscale, n_clicks):
 def update_figure(colorscale, depth):
     if colorscale is None:
         colorscale = 'Son0001'
+
     # def update_figure(colorscale):
     if 'all' in [x.lower() for x in depth]:
         cdf = allinfo
     else:
-        cdf = allinfo.query(f"Well_Depth_Category=={depth}")
+        cdf = allinfo.query(f"Web_GW_Obs_Range=={depth}")
 
-    fig = px.scatter_mapbox(cdf, lat="Latitude", lon="Longitude", hover_name="Station Name",
-                            color='Well_Depth_Category',
+    print(cdf.head())
 
-                            hover_data=['Station Number', 'Local Grid ID', 'StateID',
-                                        'State Well Completion Report Number', 'CASGEM', ])
-    fig.update_layout(mapbox_style="open-street-map")
-    fig.update_geos(fitbounds="locations")
-    fig.update_layout(clickmode="event+select")
+    def convert_empty_strings_to_nan(data_frame, column_name):
+        # Replace empty strings with NaN in the specified column
+        data_frame[column_name] = data_frame[column_name].replace('', np.nan)
+        return data_frame
+
+    cdf = convert_empty_strings_to_nan(cdf, 'station_longitude')
+    cdf = convert_empty_strings_to_nan(cdf, 'station_latitude')
+
+    cdf = cdf.astype({'station_longitude':np.float64,
+                      'station_latitude': np.float64},  errors='ignore')
+    cdf = cdf.dropna(subset = 'station_longitude')
+
+    print(cdf.filter(regex='station').dtypes)
+
+    try:
+        fig = px.scatter_mapbox(cdf,
+                                lat="station_latitude",
+                            lon="station_longitude",
+                            hover_name="Station Name",
+                            color='Web_GW_Obs_Range',
+
+                            # hover_data=['Station Number', 'Local Grid ID', 'StateID',
+                            #             'State Well Completion Report Number', 'CASGEM', ]
+
+                            )
+
+
+
+
+        fig.update_layout(mapbox_style="open-street-map")
+        fig.update_geos(fitbounds="locations")
+        fig.update_layout(clickmode="event+select")
+
+        print('the map figure does work')
+    except:
+        print('\n\nit DOES  fail\n\n')
+        fig =  go.Figure()
     #
     # fig.add_trace(go.Scattermapbox(
     #     lat=get_loc(colorscale)[0],
