@@ -26,9 +26,26 @@ server = app.server
 # df_meas.loc[:, 'Timestamp'] = pd.to_datetime(df_meas.loc[:, 'Timestamp'])
 
 k = helper.get_kiwis()
-pars = k.get_parameter_list(stationparameter_name = "Groundw*")
+# pars = k.get_parameter_list(parametertype_name = "Groundw*", return_fields = ['station_name'])
+ts = pd.concat([k.get_timeseries_list(station_name = 'SRP*',
+                parametertype_name = "Groundw*",
+                return_fields = ['station_name', 'coverage']),
 
+                k.get_timeseries_list(station_name = 'Son*',
+                parametertype_name = "Groundw*",
+                return_fields = ['station_name', 'coverage','stationparameter_name']),
 
+                k.get_timeseries_list(station_name = 'PET*',
+                parametertype_name = "Groundw*",
+                return_fields = ['station_name', 'coverage']),
+
+                k.get_timeseries_list(station_no = 'LRR*',
+                parametertype_name = "Groundw*",
+                return_fields = ['station_name', 'coverage'])])
+
+print('-----------')
+print(ts.station_name.apply(lambda x:x[0:3]).unique())
+print('-----------')
 
 # path = os.path.join('allinfo_stations.csv')
 
@@ -39,15 +56,15 @@ pars = k.get_parameter_list(stationparameter_name = "Groundw*")
 allinfo = pd.concat([k.get_station_list(
     return_fields =[ 'station_name', 'station_latitude','station_longitude', 'site_no','custom_attributes'],
     parametertype_name = "Groundw*", site_no = 'SRP*'),
-k.get_station_list(
- return_fields=['station_name', 'station_latitude', 'station_longitude',  'site_no','custom_attributes'],
- parametertype_name="Groundw*", site_no='Son'),
-k.get_station_list(
- return_fields=['station_name', 'station_latitude', 'station_longitude', 'site_no', 'custom_attributes'],
- parametertype_name="Groundw*", site_no='PET*'),
-          k.get_station_list(
-              return_fields=['station_name', 'station_latitude', 'station_longitude', 'site_no', 'custom_attributes'],
-              parametertype_name="Groundw*", site_no='LRR*')
+    k.get_station_list(
+    return_fields=['station_name', 'station_latitude', 'station_longitude',  'site_no','custom_attributes'],
+    parametertype_name="Groundw*", site_no='Son'),
+    k.get_station_list(
+    return_fields=['station_name', 'station_latitude', 'station_longitude', 'site_no', 'custom_attributes'],
+    parametertype_name="Groundw*", site_no='PET*'),
+    k.get_station_list(
+    return_fields=['station_name', 'station_latitude', 'station_longitude', 'site_no', 'custom_attributes'],
+    parametertype_name="Groundw*", site_no='LRR*')
 ]
 )
 allinfo = allinfo.rename(columns={'station_name': 'Station Name'})
@@ -70,122 +87,87 @@ all_options = {
 }
 
 
-def layout():
-    return html.Div([
-        html.H1("Waterlevel Hydrographs"),
-        html.Div(
-            [html.Div([
-                html.H1("Well Depth"),
-                dcc.Checklist(
-                    id="checkbox",
-                    options=[
-                        {"label": "Shallow", "value": "Shallow (0-200ft)"},
-                        {"label": "Medium", "value": "Medium (200-500ft)"},
-                        {"label": "Deep", "value": "Deep(>500ft)"},
-                        {"label": "Unknown", "value": "Other"},
-                        {"label": "All", "value": "All"},
-                    ],
-                    labelStyle={"display": "block"},
-                    value=["Shallow (0-200ft)", "Medium (200-500ft)",
-                           "Deep(>500ft)"], ), ],
-                style={'width': '20%', 'display': 'inline-block'}
+app.layout = html.Div([
+    html.H1("Waterlevel Hydrographs"),
+    html.Div([
+        html.Div([
+            html.H1("Well Depth"),
+            dcc.Checklist(
+                id="checkbox",
+                options=[
+                    {"label": "Shallow", "value": "Shallow (0-200ft)"},
+                    {"label": "Medium", "value": "Medium (200-500ft)"},
+                    {"label": "Deep", "value": "Deep(>500ft)"},
+                    {"label": "Unknown", "value": "Other"},
+                    {"label": "All", "value": "All"},
+                ],
+                labelStyle={"display": "block"},
+                value=["Shallow (0-200ft)", "Medium (200-500ft)", "Deep(>500ft)"],
             ),
+            html.H1("Well Type"),
+            dcc.Checklist(
+                id="check_rmp",
+                options=[
+                    {"label": "RMP", "value": "RMP"},
+                    {"label": "Non-RMP", "value": "Non-RMP"},
+                    {"label": "All", "value": "All"},
+                ],
+                labelStyle={"display": "block"},
+                value=["All"]
+            ),
+        ], style={'width': '20%', 'display': 'inline-block'}),
+        html.Div([
+            dcc.Graph(id='mapbox'),
+        ], style={'width': '70%', 'display': 'inline-block'}),
+    ]),
+    html.Hr(),
+    html.Div([  # Create a new div for the range slider
+        dcc.RangeSlider(
+            id='depth-slider',
+            min=1950,
+            max=2023,
+            step=5,
+            marks={i: f"{i} ft" for i in range(1950, 2025, 5)},
+            value=[2010, 2015],
+        ),
+    ], style={'width': '90%', 'margin': '0 auto', 'text-align': 'center'}),
+    html.Hr(),
+    html.Button("Show Hydrograph", id="show-image", n_clicks=0),
+    dcc.Graph(id='graph'),
+    html.Hr(),
+])
 
-                html.Div([
-                    html.H1("Well Type"),
-                    dcc.Checklist(
-                        id="check_rmp",
-                        options=[
-                            {"label": "RMP", "value": "RMP"},
-                            {"label": "Non-RMP", "value": "Non-RMP"},
-                            {"label": "All", "value": "All"},
-                        ],
-                        labelStyle={"display": "block"},
-                        value=["All"]
-                    )],
-                    style={'width': '20%', 'float': 'middle', 'display': 'inline-block'}
-                ),
 
-                html.Div([dcc.Graph(id='mapbox'), ],
-                         style={'width': '50%', 'float': 'right', 'height': '500', 'display': 'inline-block'}),
-            ]),
 
-        html.Hr(),
-        html.Button("Show Hydrograph", id="show-image", n_clicks=0),
-        dcc.Graph(id='graph'),
-        html.Hr(),
-        html.H4("Station Info"),
-        dcc.Markdown('''''', id='well_info'),
-        # dcc.Graph(id = 'table', ),
 
-        # dcc.Checklist(id = 'depth',
-        #               options = ['Deep', 'Shallow', 'Unknown'],
-        #               value = ['Deep', 'Shallow'],
-        #                 ),
-        # dcc.Dropdown(
-        #     id='countries-radio',
-        #     options=[{'label': k, 'value': k} for k in all_options.keys()],
-        #     value='Santa Rosa Plain',
-        #     placeholder="Select a Basin",
-        # ),
-
-        # dcc.Dropdown(id='cities-radio',
-        #     placeholder="Select a station",),
-    ])
-
-app.layout = layout()
-
-# @app.callback(
-#     Output('cities-radio', 'options'),
-#     Input('countries-radio', 'value'))
-# def set_cities_options(selected_country):
-#     return [{'label': i, 'value': i} for i in all_options[selected_country]]
-#
-#
-# @app.callback(
-#     Output('cities-radio', 'value'),
-#     Input('cities-radio', 'options'))
-# def set_cities_value(available_options):
-#     return available_options[0]['value']
-
-# @app.callback(
-#     Output('cities-radio', 'value'),
-#     Input('cities-radio', 'options'))
-# def set_cities_value(available_options):
-#     if available_options is None:
-#         out = ''
+# # #update table
+# @callback(
+#     Output('well_info', 'children'),
+#     Input('mapbox', 'selectedData'))
+# def set_table_value(available_options):
+#     cur = available_options
+#     if cur is None:
+#         return go.Figure(data=[go.Table()]), ''''''
 #     else:
-#         out = available_options['station_name']
-#     return out
-
-# #update table
-@callback(
-    Output('well_info', 'children'),
-    Input('mapbox', 'selectedData'))
-def set_table_value(available_options):
-    cur = available_options
-    if cur is None:
-        return go.Figure(data=[go.Table()]), ''''''
-    else:
-        cur = cur['points'][0]['hovertext']
-        print(cur)
-
-    # table = go.Figure(data=[go.Table(
-    # header=dict(values=list(allinfo.loc[:,:'APN Number'].columns),
-    #             fill_color='paleturquoise',
-    #             align='left'),
-    # cells=dict(values=allinfo.loc[[cur],:'APN Number'].T.to_numpy().tolist(),
-    #            fill_color='lavender',
-    #            align='left'))])
-
-    vals = allinfo.loc[[cur], :].T.dropna().to_dict()
-    # vals = allinfo.loc[[cur], :'APN Number'].T.dropna().to_dict()
-    vals = vals[cur]
-    d = [f"{k[0]}: {k[1]}" for k in vals.items()]
-    mdown = '  \n'.join(d)
-    print(mdown)
-
-    return mdown
+#         cur = cur['points'][0]['hovertext']
+#         print(cur)
+#
+#     # table = go.Figure(data=[go.Table(
+#     # header=dict(values=list(allinfo.loc[:,:'APN Number'].columns),
+#     #             fill_color='paleturquoise',
+#     #             align='left'),
+#     # cells=dict(values=allinfo.loc[[cur],:'APN Number'].T.to_numpy().tolist(),
+#     #            fill_color='lavender',
+#     #            align='left'))])
+#
+#     vals = allinfo.loc[[cur], :].T.dropna().to_dict()
+#     # vals = allinfo.loc[[cur], :'APN Number'].T.dropna().to_dict()
+#     vals = vals[cur]
+#     d = [f"{k[0]}: {k[1]}" for k in vals.items()]
+#     mdown = '  \n'.join(d)
+#     print(mdown)
+#
+#     return mdown
 
 
 # # # #update table
@@ -249,17 +231,34 @@ def update_figure(colorscale, n_clicks):
 @callback(
     Output('mapbox', 'figure'),
     [Input('mapbox', 'selectedData'),
-     Input('checkbox', 'value')]
+     Input('checkbox', 'value'),
+     Input('depth-slider', 'value')]  # Add this input
 )
-def update_figure(colorscale, depth):
+def update_figure(colorscale, depth, slider_value):  # Modify the function parameters
     if colorscale is None:
         colorscale = 'Son0001'
 
-    # def update_figure(colorscale):
+    # Filter the data based on the depth range selected with the slider
+    yearmin, yearmax = slider_value
+
     if 'all' in [x.lower() for x in depth]:
         cdf = allinfo
     else:
         cdf = allinfo.query(f"Web_GW_Obs_Range=={depth}")
+
+    ts.loc[:,'yearmin'] = pd.to_datetime(ts.loc[:,'from']).dt.year
+    ts.loc[:, 'yearmax'] = pd.to_datetime(ts.loc[:, 'to']).dt.year
+
+    print(yearmin)
+    print(yearmax)
+
+    # Filter the data based on the year range
+    ts_file = ts[(ts['yearmin'] <= yearmin) & (ts['yearmax'] >= yearmax)]
+
+    print(ts.filter(regex = 'year|from|to|station').query("station_name.str.startswith('SRP')"))
+    print(ts.shape)
+
+    cdf = cdf.loc[cdf.loc[:,'Station Name'].isin(ts_file.loc[:,'station_name'])]
 
     print(cdf.head())
 
