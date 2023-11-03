@@ -18,7 +18,7 @@ import plot_help
 # from . import plot_wet as pw
 # from . import wiski
 # from .wiski import gw_data
-
+import warnings
 
 #     get_ipython().magic(u'matplotlib inline')
 class wiski_plot(object):
@@ -226,7 +226,7 @@ class wiski_plot(object):
                                   layer="below",
                                   opacity=0.8,
                                   legendgroup="group2",
-                                  legendgrouptitle_text="Water Year Type",
+                                  # legendgrouptitle_text="Water Year Type",
                                   name=row['Type'],
                                   showlegend=False
                                   )
@@ -246,7 +246,7 @@ class wiski_plot(object):
 
                 wytext.extend([row['Type']])
 
-            print(wytext)
+            # print(wytext)
 
         # limax = [0, 1, 0, 1]
         print(self.gw_elev)
@@ -254,7 +254,7 @@ class wiski_plot(object):
         alldat = pd.DataFrame()
         for _, pname in self.gw_elev.iterrows():
             # f, bad_meas = self.get_gw_data(pname, start_year=1900)
-            print(f"\n\nloading the following:{pname}\n\n")
+            print(f"\n\nloading the following\n:{pname}\n\n")
             f, bad_meas = gw_data.get_gw_data(pname, start_year=1900)
             print('done loading\n\n')
             # change marker/plot type depending on if manual measurement
@@ -281,12 +281,22 @@ class wiski_plot(object):
                 fresh = f.resample("1D").mean().dropna()
 
                 if style == '-':
-                    fig.add_trace(go.Scatter(x=fresh.index.values, y=fresh.loc[:,'Pressure Transducer'],
-                                             mode='lines',
-                                             name=pname[4].replace("_"," "),
-                                  legendgroup="group1",
-                                  legendgrouptitle_text="Groundwater Observations",)
-                                  )
+                    if "Pressure Transducer" in fresh.columns:
+                        fig.add_trace(go.Scatter(x=fresh.index.values, y=fresh.loc[:,'Pressure Transducer'],
+                                                 mode='lines',
+                                                 name=pname[4].replace("_"," "),
+                                      legendgroup="group1",
+                                      legendgrouptitle_text="Groundwater Observations",)
+                                      )
+                    elif "Manual Measurement" in fresh.columns:
+                        fig.add_trace(go.Scatter(x=fresh.index.values, y=fresh.loc[:,'Manual Measurement'],
+                                                 mode='lines',
+                                                 name=pname[4].replace("_"," "),
+                                      legendgroup="group1",
+                                      legendgrouptitle_text="Groundwater Observations",)
+                                      )
+                        print(fresh.head())
+                        warnings.warn("'Pressure Transducer' is not in the columns plotting")
                 else:
                     marker = go.scatter.Marker(size=5, symbol='square', )
                     marker.color = 'blue'
