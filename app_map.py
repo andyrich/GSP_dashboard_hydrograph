@@ -249,19 +249,10 @@ def update_figure(colorscale, depth, slider_value):  # Modify the function param
     ts.loc[:,'yearmin'] = pd.to_datetime(ts.loc[:,'from']).dt.year
     ts.loc[:, 'yearmax'] = pd.to_datetime(ts.loc[:, 'to']).dt.year
 
-    print(yearmin)
-    print(yearmax)
-
     # Filter the data based on the year range
     ts_file = ts[(ts['yearmin'] <= yearmin) & (ts['yearmax'] >= yearmax)]
 
-    print(ts.filter(regex = 'year|from|to|station').query("station_name.str.startswith('SRP')"))
-    print(ts.shape)
-
     cdf = cdf.loc[cdf.loc[:,'Station Name'].isin(ts_file.loc[:,'station_name'])]
-
-    print(cdf.head())
-
     def convert_empty_strings_to_nan(data_frame, column_name):
         # Replace empty strings with NaN in the specified column
         data_frame[column_name] = data_frame[column_name].replace('', np.nan)
@@ -273,8 +264,6 @@ def update_figure(colorscale, depth, slider_value):  # Modify the function param
     cdf = cdf.astype({'station_longitude':np.float64,
                       'station_latitude': np.float64},  errors='ignore')
     cdf = cdf.dropna(subset = 'station_longitude')
-
-    print(cdf.filter(regex='station').dtypes)
 
     try:
         fig = px.scatter_mapbox(cdf,
@@ -292,7 +281,7 @@ def update_figure(colorscale, depth, slider_value):  # Modify the function param
 
 
         fig.update_layout(mapbox_style="open-street-map")
-        fig.update_geos(fitbounds="locations")
+        # fig.update_geos(fitbounds="locations")
         fig.update_layout(clickmode="event+select")
 
         print('the map figure does work')
