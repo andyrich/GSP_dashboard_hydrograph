@@ -199,15 +199,22 @@ class wiski_plot(object):
         fig = go.Figure()
 
         if plot_wet:
-            years = np.arange(1950, 2024)
-            aa_milne_arr = ['Very Wet', 'Wet', 'Normal', 'Dry', 'Very Dry']
-            wetdry = np.random.choice(aa_milne_arr, len(years))
-            # print(years)
-            dfwet = pd.DataFrame({"WY":years, "Type":wetdry})
-            dw = pd.get_dummies(dfwet.Type,  prefix=None, dtype = int)
-            dfwet = dfwet.join(dw)
-            # print(dfwet.head())
+            # years = np.arange(1950, 2024)
+            # aa_milne_arr = ['Very Wet', 'Wet', 'Normal', 'Dry', 'Very Dry']
+            # wetdry = np.random.choice(aa_milne_arr, len(years))
+            # # print(years)
+            # dfwet = pd.DataFrame({"WY":years, "Type":wetdry})
+            # dw = pd.get_dummies(dfwet.Type,  prefix=None, dtype = int)
+            # dfwet = dfwet.join(dw)
+            # # print(dfwet.head())
+            # dfwet = dfwet.set_index('WY')
+            dfwet = pd.read_csv('SRP_SON_PET_water_types.csv',index_col = [0])
+            print(dfwet)
+            print('asdfasdfasdfasdfasdfas')
+            dfwet = dfwet.rename(columns = {"WY_TYPE":"Type",'wy.1':"WY"})
             dfwet = dfwet.set_index('WY')
+            print(dfwet)
+            print(dfwet.columns)
             # print(dfwet.head())
             colors = {'Very Wet':'cornflowerblue',
                       'Wet': "lightblue",

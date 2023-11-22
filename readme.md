@@ -11,7 +11,7 @@
 
     '''bin/Source/activate''' for windows
     
-    source bin/Source/acrivate' for linux
+    source venv/bin/activate' for linux
     
 3) install the requirements
 

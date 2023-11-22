@@ -27,22 +27,27 @@ server = app.server
 
 k = helper.get_kiwis()
 # pars = k.get_parameter_list(parametertype_name = "Groundw*", return_fields = ['station_name'])
-ts = pd.concat([k.get_timeseries_list(station_name = 'SRP*',
-                parametertype_name = "Groundw*",
-                return_fields = ['station_name', 'coverage']),
+print('getting timeseries')
 
-                k.get_timeseries_list(station_name = 'Son*',
-                parametertype_name = "Groundw*",
-                return_fields = ['station_name', 'coverage','stationparameter_name']),
+if os.path.exists('ts.pickle'):
+    ts = pd.read_pickle('ts.pickle')
+else:
+    ts = pd.concat([k.get_timeseries_list(station_name = 'SRP*',
+                    parametertype_name = "Groundw*",
+                    return_fields = ['station_name', 'coverage','stationparameter_name']),
 
-                k.get_timeseries_list(station_name = 'PET*',
-                parametertype_name = "Groundw*",
-                return_fields = ['station_name', 'coverage']),
+                    k.get_timeseries_list(station_name = 'Son*',
+                    parametertype_name = "Groundw*",
+                    return_fields = ['station_name', 'coverage','stationparameter_name']),
 
-                k.get_timeseries_list(station_name = 'LRR*',
-                parametertype_name = "Groundw*",
-                return_fields = ['station_name', 'coverage'])])
+                    k.get_timeseries_list(station_name = 'PET*',
+                    parametertype_name = "Groundw*",
+                    return_fields = ['station_name', 'coverage','stationparameter_name']),
 
+                    k.get_timeseries_list(station_name = 'LRR*',
+                    parametertype_name = "Groundw*",
+                    return_fields = ['station_name', 'coverage','stationparameter_name'])])
+    ts.to_pickle('ts.pickle')
 print('-----------')
 print(ts.station_name.apply(lambda x:x[0:3]).unique())
 print('-----------')
@@ -52,21 +57,36 @@ print('-----------')
 # allinfo = pd.read_csv(path, index_col=[0])
 # allinfo = allinfo.rename(columns={'Station Name.1': 'Station Name'})
 # allinfo.loc[:, 'Station Name'] = allinfo.index
+print('getting get_station_list')
 
-allinfo = pd.concat([k.get_station_list(
-    return_fields =[ 'station_name', 'station_latitude','station_longitude', 'site_no','custom_attributes'],
-    parametertype_name = "Groundw*", site_no = 'SRP*'),
-    k.get_station_list(
-    return_fields=['station_name', 'station_latitude', 'station_longitude',  'site_no','custom_attributes'],
-    parametertype_name="Groundw*", site_no='Son'),
-    k.get_station_list(
-    return_fields=['station_name', 'station_latitude', 'station_longitude', 'site_no', 'custom_attributes'],
-    parametertype_name="Groundw*", site_no='PET*'),
-    k.get_station_list(
-    return_fields=['station_name', 'station_latitude', 'station_longitude', 'site_no', 'custom_attributes'],
-    parametertype_name="Groundw*", site_no='LRR*')
-]
-)
+
+if os.path.exists('allinfo.pickle'):
+    allinfo = pd.read_pickle('allinfo.pickle')
+else:
+    allinfo = pd.concat([k.get_station_list(
+        return_fields =[ 'station_name', 'station_latitude','station_longitude', 'site_no','custom_attributes'],
+        parametertype_name = "Groundw*", site_no = 'SRP*'),
+        k.get_station_list(
+        return_fields=['station_name', 'station_latitude', 'station_longitude',  'site_no','custom_attributes'],
+        parametertype_name="Groundw*", site_no='Son'),
+        k.get_station_list(
+        return_fields=['station_name', 'station_latitude', 'station_longitude', 'site_no', 'custom_attributes'],
+        parametertype_name="Groundw*", site_no='PET*'),
+        k.get_station_list(
+        return_fields=['station_name', 'station_latitude', 'station_longitude', 'site_no', 'custom_attributes'],
+        parametertype_name="Groundw*", site_no='LRR*')
+    ]
+    )
+    allinfo.to_pickle("allinfo.pickle")
+
+allinfo.loc[:,'RMP_MO_Deep'] = allinfo.loc[:,'RMP_MO_Deep'].apply(lambda x: pd.to_numeric(x, errors='coerce'))
+allinfo.loc[:,'RMP_MO_Shallow'] = allinfo.loc[:,'RMP_MO_Shallow'].apply(lambda x: pd.to_numeric(x, errors='coerce'))
+# allinfo = allinfo.astype({"RMP_MO_Deep":np.float64, "RMP_MO_Shallow":np.float64}, errors = 'ignore')
+allinfo.loc[:,'RMP_Shallow'] = allinfo.loc[:,'RMP_MO_Shallow'].notnull()
+allinfo.loc[:,'RMP_Deep'] = allinfo.loc[:,'RMP_MO_Deep'].notnull()
+
+print(allinfo.loc[:,'RMP_MO_Shallow'].unique())
+
 allinfo = allinfo.rename(columns={'station_name': 'Station Name'})
 allinfo.index = allinfo.loc[:,'Station Name']
 
@@ -105,15 +125,17 @@ app.layout = html.Div([
                 value=["Shallow (0-200ft)", "Medium (200-500ft)", "Deep(>500ft)"],
             ),
             html.H1("Well Type"),
-            dcc.Checklist(
+            dcc.Dropdown(
                 id="check_rmp",
                 options=[
-                    {"label": "RMP", "value": "RMP"},
+                    {"label": "RMP Shallow", "value": "RMP_shallow"},
+                    {"label": "RMP Deep", "value": "RMP_Deep"},
                     {"label": "Non-RMP", "value": "Non-RMP"},
                     {"label": "All", "value": "All"},
                 ],
-                labelStyle={"display": "block"},
-                value=["All"]
+                # labelStyle={"display": "block"},
+                value="All",
+                multi=False,
             ),
         ], style={'width': '20%', 'display': 'inline-block'}),
         html.Div([
@@ -232,9 +254,10 @@ def update_figure(colorscale, n_clicks):
     Output('mapbox', 'figure'),
     [Input('mapbox', 'selectedData'),
      Input('checkbox', 'value'),
-     Input('depth-slider', 'value')]  # Add this input
+     Input('depth-slider', 'value'),
+     Input('check_rmp','value')]  # Add this input
 )
-def update_figure(colorscale, depth, slider_value):  # Modify the function parameters
+def update_figure(colorscale, depth, slider_value, RMP_type):  # Modify the function parameters
     if colorscale is None:
         colorscale = 'Son0001'
 
@@ -265,16 +288,26 @@ def update_figure(colorscale, depth, slider_value):  # Modify the function param
                       'station_latitude': np.float64},  errors='ignore')
     cdf = cdf.dropna(subset = 'station_longitude')
 
+    print(RMP_type)
+    print(type(RMP_type))
+    if   RMP_type == "RMP_shallow":
+        cdf = cdf.loc[cdf.loc[:,'RMP_Shallow']]
+
+    elif RMP_type == "RMP_Deep":
+        cdf = cdf.loc[cdf.loc[:, 'RMP_Deep']]
+    elif RMP_type == "Non-RMP":
+        print('sel non')
+        # print(f"shape {cdf.shape}")
+        cdf = cdf.loc[~cdf.loc[:, ['RMP_Shallow','RMP_Shallow']].any(axis = 1)]
+        # print(f"shape {cdf.shape}")
+
+
     try:
         fig = px.scatter_mapbox(cdf,
                                 lat="station_latitude",
                             lon="station_longitude",
                             hover_name="Station Name",
                             color='Web_GW_Obs_Range',
-
-                            # hover_data=['Station Number', 'Local Grid ID', 'StateID',
-                            #             'State Well Completion Report Number', 'CASGEM', ]
-
                             )
 
 
