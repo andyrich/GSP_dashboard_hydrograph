@@ -54,37 +54,6 @@ def update_inputs_from_url(search):
         return {}
 
 
-# @app.callback(
-#     Output('interactive-plot', 'figure'),
-#     [Input('station-name', 'value'),
-#      Input('plot-type', 'value'),
-#      Input('plot-options', 'value')]
-# )
-# def update_plot(station_name, plot_type, plot_options):
-#     # Create an example Plotly figure based on inputs (customize as needed)
-#     import plotly.express as px
-#
-#     data = {'x': [1, 2, 3, 4], 'y': [1, 2, 3, 4]}
-#
-#     if plot_type == 'MM':
-#         # fig = px.scatter(data, x='x', y='y', title=f'Scatter Plot for {station_name}',
-#         #                  **parse_plot_options(plot_options))
-#         print("UNDER MANUAL MEASUREMENT\n\n\n")
-#         x = wiski_data.wiski_plot(station_name)
-#         x.get_station_pars(remove_pt=True)
-#         fig = x.plot_gw()
-#     elif plot_type == 'PRESS':
-#         print("UNDER PRESSURE\n\n\n")
-#         x = wiski_data.wiski_plot(station_name)
-#         x.get_station_pars(remove_pt=False)
-#         fig = x.plot_gw()
-#     else:
-#         fig = px.scatter(data, x='x', y='y', title=f'Scatter Plot for {station_name}',
-#                          **parse_plot_options(plot_options))
-#
-#     return fig
-
-
 def parse_plot_options(options):
     parsed_options = {}
     if options:
