@@ -195,7 +195,7 @@ class wiski_plot(object):
 
             dfwet = dfwet.rename(columns = {"WY_TYPE":"Type",'wy.1':"WY"})
             dfwet = dfwet.set_index('WY')
-            print(dfwet)
+            # print(dfwet)
 
             # print(dfwet.head())
             colors = {'Very Wet':'cornflowerblue',
@@ -235,10 +235,6 @@ class wiski_plot(object):
 
                 wytext.extend([row['Type']])
 
-            # print(wytext)
-
-        # limax = [0, 1, 0, 1]
-        print(self.gw_elev)
 
         alldat = pd.DataFrame()
         for _, pname in self.gw_elev.iterrows():
@@ -401,7 +397,7 @@ class wiski_plot(object):
                                          # legendgrouptitle_text="RMP",
                                          # showlegend=True
                                          ))
-                print(MT)
+
                 fig.add_hline(y=MT, line_dash="dot",
                               line_color = 'red',
                               line_width=6,
@@ -462,7 +458,10 @@ class wiski_plot(object):
         fig.layout.yaxis.gridcolor = 'grey'
         fig.layout.xaxis.gridcolor = 'black'
 
-        fig.update_layout(legend=dict(groupclick="toggleitem",
+        fig.update_layout(
+            height = 800,
+
+            legend=dict(groupclick="toggleitem",
                                       y=-.1, orientation='h', font=dict(color='black')))
 
         return fig

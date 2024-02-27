@@ -144,7 +144,7 @@ def get_wl_smcs(stats = None, isw = False):
     if 'station_name' in df.columns:
         df = df.set_index('station_name')
 
-    print(df)
+    # print(df)
     # calculate MT/MO's
     MT = df.filter(regex='MT').loc[[stations]].dropna(how='all', axis='columns')
     MT.columns = ['MT']
