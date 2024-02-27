@@ -163,7 +163,7 @@ class wiski_plot(object):
         self.gw_elev = gw_elev
 
     def plot_gw(self, plot_wet=True, RMP=False, seasonal=True, isw = False,
-                limit_trans2manual_dates=False, remove_pt=False, xlims=None, y_axis_range_min=150):
+                limit_trans2manual_dates=True, remove_pt=False, xlims=None, y_axis_range_min=150):
         '''
         plot_wet = plot backgorund wet/dry (not implemented)
         gw_basin = ['SRP','SON','PET'] basin from which wet/dry record will be plot
@@ -263,7 +263,7 @@ class wiski_plot(object):
 
             if f.shape[0] > 0:
                 # plot the gw data
-                fresh = f.resample("1D").mean().dropna()
+                fresh = f.resample("1D").mean()
 
                 if style == '-':
                     if "Pressure Transducer" in fresh.columns:
@@ -283,12 +283,12 @@ class wiski_plot(object):
                         print(fresh.head())
                         warnings.warn("'Pressure Transducer' is not in the columns plotting")
                 else:
-                    marker = go.scatter.Marker(size=5, symbol='square', )
+                    marker = go.scatter.Marker(size=8, symbol='square', )
                     marker.color = 'blue'
                     fig.add_trace(go.Scatter(x=fresh.index.values, y=fresh.loc[:,'Manual Measurement'],
                                              mode='markers', marker = marker ,
                                              fillcolor= 'black',
-                                             name=pname[4].replace("_"," "),
+                                             name=pname['Param_reclass'].replace("_"," "),
                     legendgroup = "group1",
                                   legendgrouptitle_text = "Groundwater Observations",)
                     )
