@@ -404,6 +404,7 @@ class wiski_plot(object):
                 print(MT)
                 fig.add_hline(y=MT, line_dash="dot",
                               line_color = 'red',
+                              line_width=4,
                               annotation_text="Minimum Threshold",
                               annotation_position="bottom left",
                               annotation_font_size=12,
@@ -412,6 +413,7 @@ class wiski_plot(object):
 
                 fig.add_hline(y=MO, line_dash="dot",
                               line_color = 'lightyellow',
+                              line_width = 4,
                               annotation_text="Measurable Objective",
                               annotation_position="top left",
                               annotation_font_size=12,
