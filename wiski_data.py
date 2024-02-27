@@ -371,7 +371,7 @@ class wiski_plot(object):
             print('plotting RMP Values')
             if self.RMP_ts.query("ts_name=='RMP.Fall' or ts_name=='RMP.Spring' ").shape[0] > 0:
                 fall_df, spring_df = helper.load_wiski_rmp_value(self.station, isw)
-
+                MT, MO = helper.get_wl_smcs(self.station,isw)
                 fig.add_trace(go.Scatter(x=fall_df.index, y=fall_df.loc[:, 'Value'],
                                          mode='markers',
                                          marker=dict(
@@ -401,8 +401,22 @@ class wiski_plot(object):
                                          # legendgrouptitle_text="RMP",
                                          # showlegend=True
                                          ))
+                print(MT)
+                fig.add_hline(y=MT, line_dash="dot",
+                              line_color = 'red',
+                              annotation_text="Minimum Threshold",
+                              annotation_position="bottom left",
+                              annotation_font_size=12,
+                              annotation_font_color="blue"
+                              )
 
-
+                fig.add_hline(y=MO, line_dash="dot",
+                              line_color = 'lightyellow',
+                              annotation_text="Measurable Objective",
+                              annotation_position="top left",
+                              annotation_font_size=12,
+                              annotation_font_color="blue"
+                              )
 
         # if no data has been plotted, this will cause it to fail
         if hasattr(alldat.index.min(), 'year'):

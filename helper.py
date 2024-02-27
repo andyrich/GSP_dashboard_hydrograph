@@ -106,3 +106,60 @@ def load_wiski_rmp_value(station, isw = False):
 
 
     return df_fall, df_spring
+
+def get_wl_smcs(stats = None, isw = False):
+    '''
+    load the actual waterlevel MT/MO/IM
+    :param basin: site to search in
+    :param stats: list (should be df, list or str) of station names or dataframe with series named station_name (ie from get_wl_smc_stations)
+    :param isw: True/false if true will filter to columns containing isw. otherwise will be RMP (like all gwl MT/MO/s)
+    :return: df of all waterlevel smcs get_wl_smc_stations
+    '''
+    url = "https://www2.kisters.net/sonomacountygroundwater/KiWIS/KiWIS?service=kisters&type=queryServices&request=getStationList&format=html&station_name={:}&returnfields=station_name,station_no,ca_sta"
+
+
+    if isinstance(stats, list) :
+        stations = stats[0]
+    elif isinstance(stats, str):
+        stations = stats
+    else:
+        raise ValueError('not sure what input type stats is. should be df, list or str')
+
+
+    url = url.format(stations)
+    print(f"here are the stations being requested\n{stations}")
+
+    df = wiski_request_ssl(url)
+    df = pd.read_html(df, header=0)[0]
+
+    if isw:
+        df = df.set_index('station_name').filter(regex='ISW')
+    else:
+        df = df.set_index('station_name').filter(regex='RMP')
+
+    df = df.dropna(axis = 0, how = 'all')
+
+    df = df[df.index.notnull()].reset_index()
+
+    if 'station_name' in df.columns:
+        df = df.set_index('station_name')
+
+    print(df)
+    # calculate MT/MO's
+    MT = df.filter(regex='MT').loc[[stations]].dropna(how='all', axis='columns')
+    MT.columns = ['MT']
+    MT = MT.at[stations, 'MT']
+
+    MO = df.filter(regex='MO').loc[[stations]].dropna(how='all', axis='columns')
+    MO.columns = ['MO']
+    MO = MO.at[stations, 'MO']
+
+    # IM = df.filter(regex='IM').loc[stations].dropna(how='all', axis='columns')
+    # try:
+    #     IM.columns = ['IM']
+    #     IM = IM.at[stations, 'IM']
+    # except:
+    #     IM = ''
+
+    return MT, MO
+

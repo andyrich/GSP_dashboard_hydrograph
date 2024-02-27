@@ -9,7 +9,7 @@
 
 2) activate the environment: 
 
-    '''bin/Source/activate''' for windows
+    '''venv/Scripts/activate''' for windows
     
     source venv/bin/activate' for linux
     
