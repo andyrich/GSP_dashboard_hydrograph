@@ -103,7 +103,11 @@ class wiski_plot(object):
         content = helper.wiski_request_ssl(url_send)
         x = pd.read_html(content, header=0)
         gw_stats = x[0]
+        gw_stats = gw_stats.dropna(subset = 'from')
+
         print(gw_stats)
+        self.RMP_ts = gw_stats.query("ts_name.str.contains('RMP')")
+
         # filter to only depth to water and pressure measurements, then keep only one of these per station
         v_ = gw_stats.stationparameter_longname.str.upper().str.contains('ELEVATION').to_frame()
         fil = pd.concat([v_], axis=1)
@@ -135,7 +139,7 @@ class wiski_plot(object):
         # do re-class of timeseries names
         gw_elev.loc[:, 'Param_reclass'] = gw_elev.loc[:, 'ts_name':'ts_type_name'].apply(recl, axis=1)
 
-        # finally classify all "DayMeanEdit" as Daily Pressure Trnasducer
+        # finally classify all "DayMeanEdit" as Daily Pressure Transducer
         c = gw_elev.loc[:, 'ts_name'] == 'DayMeanEdit'
         gw_elev.loc[c, 'Param_reclass'] = 'Pressure Transducer\n(Daily)'
 
@@ -158,7 +162,7 @@ class wiski_plot(object):
         gw_elev.loc[:, 'to'] = pd.to_datetime(gw_elev.loc[:, 'to']).dt.tz_localize(None)
         self.gw_elev = gw_elev
 
-    def plot_gw(self, plot_wet=True, gw_basin='SRP', seasonal=True, plot_dry=True,
+    def plot_gw(self, plot_wet=True, RMP=False, seasonal=True, isw = False,
                 limit_trans2manual_dates=False, remove_pt=False, xlims=None, y_axis_range_min=150):
         '''
         plot_wet = plot backgorund wet/dry (not implemented)
@@ -171,8 +175,7 @@ class wiski_plot(object):
         y_axis_range_min = min range for hydrograph
         '''
 
-        # from datetime import date
-        # import plot_help
+
 
         if self.gw_elev is None:
             print(f'getting parameter info for the station {self.station}')
@@ -181,40 +184,19 @@ class wiski_plot(object):
         self.check_if_no_gw_data()
 
         if self.gw_data_empty:
-            # plot_help.baseline(self.ax, yearstart=1980, hard=True)
-            # plot_help.yearly_dates(self.ax)
-            # plot_help.yrange_(self.ax)
-            # self.ax.grid(True)
-            # title = '{:}, {:}'.format(self.station, '')
-            # self.ax.set_ylabel('Groundwater Elevation (ft.)')
-            # self.ax.set_title(title)
-            # self.ax.legend(fontsize='small', ncol=2)
-            # return pd.DataFrame()
             return px.scatter()
 
-        # if self.ax is None:
-            # fig, ax = plt.subplots(figsize=(6, 4.5), dpi=250)
-            # self.ax = ax
-            # self.fig = fig
+
         fig = go.Figure()
 
         if plot_wet:
-            # years = np.arange(1950, 2024)
-            # aa_milne_arr = ['Very Wet', 'Wet', 'Normal', 'Dry', 'Very Dry']
-            # wetdry = np.random.choice(aa_milne_arr, len(years))
-            # # print(years)
-            # dfwet = pd.DataFrame({"WY":years, "Type":wetdry})
-            # dw = pd.get_dummies(dfwet.Type,  prefix=None, dtype = int)
-            # dfwet = dfwet.join(dw)
-            # # print(dfwet.head())
-            # dfwet = dfwet.set_index('WY')
+
             dfwet = pd.read_csv('SRP_SON_PET_water_types.csv',index_col = [0])
-            print(dfwet)
-            print('asdfasdfasdfasdfasdfas')
+
             dfwet = dfwet.rename(columns = {"WY_TYPE":"Type",'wy.1':"WY"})
             dfwet = dfwet.set_index('WY')
             print(dfwet)
-            print(dfwet.columns)
+
             # print(dfwet.head())
             colors = {'Very Wet':'cornflowerblue',
                       'Wet': "lightblue",
@@ -291,14 +273,14 @@ class wiski_plot(object):
                     if "Pressure Transducer" in fresh.columns:
                         fig.add_trace(go.Scatter(x=fresh.index.values, y=fresh.loc[:,'Pressure Transducer'],
                                                  mode='lines',
-                                                 name=pname[4].replace("_"," "),
+                                                 name=pname['Param_reclass'].replace("_"," "),
                                       legendgroup="group1",
                                       legendgrouptitle_text="Groundwater Observations",)
                                       )
                     elif "Manual Measurement" in fresh.columns:
                         fig.add_trace(go.Scatter(x=fresh.index.values, y=fresh.loc[:,'Manual Measurement'],
                                                  mode='lines',
-                                                 name=pname[4].replace("_"," "),
+                                                 name=pname['Param_reclass'].replace("_"," "),
                                       legendgroup="group1",
                                       legendgrouptitle_text="Groundwater Observations",)
                                       )
@@ -327,21 +309,22 @@ class wiski_plot(object):
                 markers = go.scatter.Marker(size=10, symbol='square')
                 markers.color = 'green'
 
-                fig.add_trace(go.Scatter(x=fall.index, y=fall.loc[:,'Manual Measurement'],
-                                        mode='markers',
-                                        marker = markerf,
-                                        name= 'Fall',
-                                         legendgroup="group1",
-                                         legendgrouptitle_text="Groundwater Observations",
-                                         ))
+                if not RMP:
+                    fig.add_trace(go.Scatter(x=fall.index, y=fall.loc[:,'Manual Measurement'],
+                                            mode='markers',
+                                            marker = markerf,
+                                            name= 'Fall',
+                                             legendgroup="group1",
+                                             legendgrouptitle_text="Groundwater Observations",
+                                             ))
 
-                fig.add_trace(go.Scatter(x=spring.index, y=spring.loc[:,'Manual Measurement'],
-                                        mode='markers',
-                                        marker=markers,
-                                        name= 'Spring',
-                                         legendgroup="group1",
-                                         legendgrouptitle_text="Groundwater Observations",
-                                         ))
+                    fig.add_trace(go.Scatter(x=spring.index, y=spring.loc[:,'Manual Measurement'],
+                                            mode='markers',
+                                            marker=markers,
+                                            name= 'Spring',
+                                             legendgroup="group1",
+                                             legendgrouptitle_text="Groundwater Observations",
+                                             ))
 
                 # plot the lines connecting the seasonal measurements
                 # tot = fall.append(spring).sort_index()
@@ -349,15 +332,16 @@ class wiski_plot(object):
                 tot['date'] = tot.index
                 tot = tot.groupby(pd.Grouper(freq='2QS')).first()
                 # print(tot.head())
-                tot.index = tot.index+pd.Timedelta(365/4, "d")
+                # tot.index = tot.index+pd.Timedelta(365/4, "d")
                 # print(tot.head())
                 line = go.scatter.Line(color = 'grey')
-                fig.add_trace(go.Scatter(x=tot.index, y=tot.loc[:,'Manual Measurement'],
-                                         showlegend=False,
-                                      name= '' ,line = line,
-                                         legendgroup="group1",
-                                         legendgrouptitle_text="Groundwater Observations",
-                                         ))
+                if not RMP:
+                    fig.add_trace(go.Scatter(x=tot.date, y=tot.loc[:,'Manual Measurement'],
+                                             showlegend=False,
+                                          name= '' ,line = line,
+                                             legendgroup="group1",
+                                             legendgrouptitle_text="Groundwater Observations",
+                                             ))
 
                 seasonal = False
 
@@ -382,15 +366,49 @@ class wiski_plot(object):
             else:
                 self.bad_meas = None
 
-            # limax = self.ax.axis()
 
-        self.alldat = alldat
+        if RMP:
+            print('plotting RMP Values')
+            if self.RMP_ts.query("ts_name=='RMP.Fall' or ts_name=='RMP.Spring' ").shape[0] > 0:
+                fall_df, spring_df = helper.load_wiski_rmp_value(self.station, isw)
+
+                fig.add_trace(go.Scatter(x=fall_df.index, y=fall_df.loc[:, 'Value'],
+                                         mode='markers',
+                                         marker=dict(
+                                             color='brown',
+                                             size=10,
+                                             line=dict(
+                                                 color='black',
+                                                 width=2
+                                             )),
+                                         name='Fall',
+                                         legendgroup="group25",
+                                         legendgrouptitle_text="Representative Monitoring Point",
+                                         # showlegend=True
+                                         ))
+
+                fig.add_trace(go.Scatter(x=spring_df.index, y=spring_df.loc[:, 'Value'],
+                                         mode='markers',
+                                         marker=dict(
+                                             color='white',
+                                             size=10,
+                                             line=dict(
+                                                 color='black',
+                                                 width=2
+                                             )),
+                                         name='Spring',
+                                         legendgroup="group25",
+                                         # legendgrouptitle_text="RMP",
+                                         # showlegend=True
+                                         ))
+
+
 
         # if no data has been plotted, this will cause it to fail
         if hasattr(alldat.index.min(), 'year'):
-            yearstart_plot = np.min([(alldat.index.min().year // 5) * 5, 1980])
+            yearstart_plot = np.min([(alldat.index.min().year // 5) * 5, 2000])
         else:
-            yearstart_plot = 1980
+            yearstart_plot = 2000
 
         if xlims is None:
             year_end_plot = None

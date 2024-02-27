@@ -40,12 +40,14 @@ def update_inputs_from_url(search):
         plot_options = params.get('plot_options', [''])[0]
         plot_wet = params.get('plot_wet', ['True'])[0].lower() == 'true'
         seasonal = params.get('seasonal', ['True'])[0].lower() == 'true'
+        RMP = params.get('rmp', ['False'])[0].lower() == 'true'
+        ISW = params.get('isw', ['False'])[0].lower() == 'true'
 
         remove_pt = plot_type =='MM'
 
         x = wiski_data.wiski_plot(station_name)
         x.get_station_pars(remove_pt=remove_pt)
-        fig = x.plot_gw(plot_wet = plot_wet, seasonal=seasonal)
+        fig = x.plot_gw(plot_wet = plot_wet, seasonal=seasonal, RMP=RMP, isw = ISW)
 
 
         return fig
