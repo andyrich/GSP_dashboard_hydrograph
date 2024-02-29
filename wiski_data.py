@@ -90,7 +90,7 @@ class wiski_plot(object):
         self.bad_meas = None
         self.manual_meas = None
 
-    def get_station_pars(self, remove_pt=False):
+    def get_station_pars(self, remove_pt=True):
         '''
         GET GW pars for one station
         '''
@@ -139,20 +139,21 @@ class wiski_plot(object):
         # do re-class of timeseries names
         gw_elev.loc[:, 'Param_reclass'] = gw_elev.loc[:, 'ts_name':'ts_type_name'].apply(recl, axis=1)
 
+
         # finally classify all "DayMeanEdit" as Daily Pressure Transducer
         c = gw_elev.loc[:, 'ts_name'] == 'DayMeanEdit'
-        gw_elev.loc[c, 'Param_reclass'] = 'Pressure Transducer\n(Daily)'
+        gw_elev.loc[c, 'Param_reclass'] = 'Pressure Transducer'
 
         # remove reclassified pressure transducer data
         # need to re-do again b/c some names weren't caught in the recl function
-        if remove_pt:
-            c = gw_elev.loc[:, 'Param_reclass'] == 'Pressure Transducer'
-            gw_elev = gw_elev.loc[~c, :]
+        # if remove_pt:
+        c = gw_elev.loc[:, 'ts_name'] == 'Day.Mean.Production'
+        gw_elev = gw_elev.loc[~c, :]
 
         # drop weird timeseries (the monthly/yearly averages)
         c = gw_elev.ts_shortname.str.contains('spring|month|year|fall', regex=True, case=False)
         gw_elev = gw_elev.loc[~c, :]
-
+        print(f'post-filter \n{gw_elev}')
         # c = gw_elev.ts_shortname.str.contains('spring|month|year|fall', regex=True, case=False)
         # gw_elev = gw_elev.loc[~c,:]
 
@@ -190,60 +191,17 @@ class wiski_plot(object):
         fig = go.Figure()
 
         if plot_wet:
-
-            dfwet = pd.read_csv('SRP_SON_PET_water_types.csv',index_col = [0])
-
-            dfwet = dfwet.rename(columns = {"WY_TYPE":"Type",'wy.1':"WY"})
-            dfwet = dfwet.set_index('WY')
-            # print(dfwet)
-
-            # print(dfwet.head())
-            colors = {'Very Wet':'cornflowerblue',
-                      'Wet': "lightblue",
-                      'Dry':"palegoldenrod",
-                    "Very Dry":"gold"}
-            # for year in np.arange(2000,2018, 3):
-            dfwet = dfwet.loc[dfwet.loc[:,'Type'] !='Normal']
-
-            wytext = []
-
-            for wy,row in dfwet.iterrows():
-                ys = datetime.datetime(wy, 1, 1)
-                ye = datetime.datetime(wy+1, 1, 1)
-                if row['Type'] in wytext:
-                    fig.add_vrect(x0=ys, x1=ye, line_width=0, fillcolor=colors[row['Type']],
-                                  layer="below",
-                                  opacity=0.8,
-                                  legendgroup="group2",
-                                  # legendgrouptitle_text="Water Year Type",
-                                  name=row['Type'],
-                                  showlegend=False
-                                  )
-                else:
-                    fig.add_vrect(x0=ys, x1=ye, line_width=0, fillcolor=colors[row['Type']],
-                                  layer="below",
-                                  opacity=0.8,
-                                  legendgroup="group2",
-                                  legendgrouptitle_text="Water Year Type",
-                                  name=row['Type'],
-                                  showlegend=True
-                                  )
-
-
-
-
-
-                wytext.extend([row['Type']])
+            helper.do_plot_wet(fig)
 
 
         alldat = pd.DataFrame()
-        for _, pname in self.gw_elev.iterrows():
+        for _, pname in self.gw_elev.sort_values('Param_reclass',ascending = False).iterrows():
             # f, bad_meas = self.get_gw_data(pname, start_year=1900)
             print(f"\n\nloading the following\n:{pname}\n\n")
             f, bad_meas = gw_data.get_gw_data(pname, start_year=1900)
             print('done loading\n\n')
             # change marker/plot type depending on if manual measurement
-            if 'Manual' in pname.Param_reclass:
+            if 'Manual' in pname.Param_reclass and f.shape[0]<365*2:
                 style = 's'
                 self.manual_meas = f
 
@@ -264,26 +222,27 @@ class wiski_plot(object):
             if f.shape[0] > 0:
                 # plot the gw data
                 fresh = f.resample("1D").mean()
-
+                print(fresh.head())
                 if style == '-':
                     if "Pressure Transducer" in fresh.columns:
                         fig.add_trace(go.Scatter(x=fresh.index.values, y=fresh.loc[:,'Pressure Transducer'],
                                                  mode='lines',
+                                                 line = {'color':'brown'},
                                                  name=pname['Param_reclass'].replace("_"," "),
                                       legendgroup="group1",
                                       legendgrouptitle_text="Groundwater Observations",)
                                       )
-                    elif "Manual Measurement" in fresh.columns:
+                    elif "Manual Measurement" in fresh.columns: #should only occur when there are manual meas that are are actually PT that are mislabeld as manual meas
                         fig.add_trace(go.Scatter(x=fresh.index.values, y=fresh.loc[:,'Manual Measurement'],
                                                  mode='lines',
-                                                 name=pname['Param_reclass'].replace("_"," "),
+                                                 name="Pressure Transducer",
                                       legendgroup="group1",
                                       legendgrouptitle_text="Groundwater Observations",)
                                       )
-                        print(fresh.head())
+
                         warnings.warn("'Pressure Transducer' is not in the columns plotting")
                 else:
-                    marker = go.scatter.Marker(size=8, symbol='square', )
+                    marker = go.scatter.Marker(size=6, symbol='square', )
                     marker.color = 'blue'
                     fig.add_trace(go.Scatter(x=fresh.index.values, y=fresh.loc[:,'Manual Measurement'],
                                              mode='markers', marker = marker ,
@@ -298,8 +257,6 @@ class wiski_plot(object):
             # plot fall/spring average for manual measurements only
             if seasonal and ('Manual' in pname.Param_reclass):
                 spring, fall = self.seasonal_mean(f)
-                self.spring = spring
-                self.fall = fall
                 markerf = go.scatter.Marker(size=10, symbol='square')
                 markerf.color = 'orange'
                 markers = go.scatter.Marker(size=10, symbol='square')
@@ -309,7 +266,7 @@ class wiski_plot(object):
                     fig.add_trace(go.Scatter(x=fall.index, y=fall.loc[:,'Manual Measurement'],
                                             mode='markers',
                                             marker = markerf,
-                                            name= 'Fall',
+                                            name= 'Fall Average',
                                              legendgroup="group1",
                                              legendgrouptitle_text="Groundwater Observations",
                                              ))
@@ -317,19 +274,15 @@ class wiski_plot(object):
                     fig.add_trace(go.Scatter(x=spring.index, y=spring.loc[:,'Manual Measurement'],
                                             mode='markers',
                                             marker=markers,
-                                            name= 'Spring',
+                                            name= 'Spring Average',
                                              legendgroup="group1",
                                              legendgrouptitle_text="Groundwater Observations",
                                              ))
 
                 # plot the lines connecting the seasonal measurements
-                # tot = fall.append(spring).sort_index()
                 tot = pd.concat([fall, spring]).sort_index()
                 tot['date'] = tot.index
                 tot = tot.groupby(pd.Grouper(freq='2QS')).first()
-                # print(tot.head())
-                # tot.index = tot.index+pd.Timedelta(365/4, "d")
-                # print(tot.head())
                 line = go.scatter.Line(color = 'grey')
                 if not RMP:
                     fig.add_trace(go.Scatter(x=tot.date, y=tot.loc[:,'Manual Measurement'],
@@ -354,10 +307,7 @@ class wiski_plot(object):
                                          legendgroup="group1",
                                          legendgrouptitle_text="Groundwater Observations",
                                          ))
-                # self.ax.plot(bad_meas.index, bad_meas.Value.values,
-                #              linestyle="None", marker='x', markersize=2,
-                #              markerfacecolor='red', markeredgecolor='red',
-                #              label='Questionable Measurement', zorder=5)
+
                 self.bad_meas = bad_meas
             else:
                 self.bad_meas = None

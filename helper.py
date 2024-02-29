@@ -163,3 +163,45 @@ def get_wl_smcs(stats = None, isw = False):
 
     return MT, MO
 
+def do_plot_wet(fig):
+    dfwet = pd.read_csv('SRP_SON_PET_water_types.csv', index_col=[0])
+
+    dfwet = dfwet.rename(columns={"WY_TYPE": "Type", 'wy.1': "WY"})
+    dfwet = dfwet.set_index('WY')
+    # print(dfwet)
+
+    # print(dfwet.head())
+    colors = {'Very Wet': 'cornflowerblue',
+              'Wet': "lightblue",
+              'Dry': "palegoldenrod",
+              "Very Dry": "gold"}
+    # for year in np.arange(2000,2018, 3):
+    dfwet = dfwet.loc[dfwet.loc[:, 'Type'] != 'Normal']
+
+    wytext = []
+
+    for wy, row in dfwet.iterrows():
+        ys = datetime.datetime(wy, 1, 1)
+        ye = datetime.datetime(wy + 1, 1, 1)
+        if row['Type'] in wytext:
+            fig.add_vrect(x0=ys, x1=ye, line_width=0, fillcolor=colors[row['Type']],
+                          layer="below",
+                          opacity=0.8,
+                          legendgroup="group2",
+                          # legendgrouptitle_text="Water Year Type",
+                          name=row['Type'],
+                          showlegend=False
+                          )
+        else:
+            fig.add_vrect(x0=ys, x1=ye, line_width=0, fillcolor=colors[row['Type']],
+                          layer="below",
+                          opacity=0.8,
+                          legendgroup="group2",
+                          legendgrouptitle_text="Water Year Type",
+                          name=row['Type'],
+                          showlegend=True
+                          )
+
+        wytext.extend([row['Type']])
+
+    return wytext
