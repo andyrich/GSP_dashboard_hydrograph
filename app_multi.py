@@ -6,7 +6,7 @@ import wiski_data
 import pressure_transducers
 import plotly.express as px
 from dash import dash_table
-
+import reservoir_storage
 
 info = None
 
@@ -61,6 +61,8 @@ def update_inputs_from_url(search):
 
         PRESSURE_MAP = params.get('PRESSURE_MAP', ['False'])[0].lower() == 'true'
 
+        ressy = params.get('RES',['False'])[0].lower() == 'true'
+
         if PRESSURE_MAP:
 
 
@@ -90,6 +92,18 @@ def update_inputs_from_url(search):
             # fig.show()
             return fig, dtable  # Return figure and datatable
 
+        elif ressy:
+            if station_name.lower() == "son":
+                x, stor = reservoir_storage.get_son()
+                fig = reservoir_storage.plot_son(x.reset_index(), stor)
+            else:
+                act_mendo, stor_mendo = reservoir_storage.get_men()
+                act_mendo = act_mendo.reset_index()
+                stor_mendo = stor_mendo.reset_index()
+                fig = reservoir_storage.plot_men(act_mendo, stor_mendo)
+
+
+            return fig, {}
         else:
             remove_pt = plot_type =='MM'
 
