@@ -54,6 +54,13 @@ def plot_men(x, stor):
                              fillcolor='rgba(135,206,235,.5)', name='Storage Curve'))
     fig.update_traces(mode="lines", hovertemplate='%{y:,d} <i>af</i>')
     fig.update_xaxes(tickformat="%b %d")
+    yearmax = x.year.max()
+    print(yearmax)
+    fig.for_each_trace(
+        lambda trace: trace.line.update( width=7) if trace.name == f"{yearmax}" else (),
+    )
+
+    print(x.head())
     return fig
 
 
@@ -96,6 +103,12 @@ def plot_son(x, stor):
                     fillcolor = 'skyblue', name = 'Storage Curve'))
   fignew.update_xaxes(tickformat="%b %d")
   fignew.update_traces(mode="lines", hovertemplate='%{y:,d} <i>af</i>')
+  #set line width to thicker for current year
+  yearmax = x.year.max()
+  fignew.for_each_trace(
+      lambda trace: trace.line.update(width=7) if trace.name == f"{yearmax}" else (),
+  )
+
   return fignew
 #
 # act_mendo, stor_mendo = get_men()
