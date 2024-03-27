@@ -69,12 +69,12 @@ def update_dataframe(value):
      Input('filter-radio', 'value')]
 )
 def update_map(selected_rows, press):
-    print(press)
+
     # No change in this callback function
     if selected_rows:
         selected_cities = df.iloc[selected_rows]['Station_Name']
         selected_rows = df[df['Station_Name'].isin(selected_cities)]
-        print(selected_rows)
+
         selected_rows = selected_rows.query(f"Param=='{press}'")
         fig = px.scatter_mapbox(selected_rows, lon='Station_Longitude', lat='Station_Latitude',
                                 color="Number of Months Since Last Measurement",
@@ -82,7 +82,7 @@ def update_map(selected_rows, press):
                                 hover_data=["Station_Name", "station_no", "Number of Months Since Last Measurement"],
                                 size="Number of Months Since Last Measurement")
     else:
-        print(df.query(f"Param=='{press}'"))
+
         fig = px.scatter_mapbox(df.query(f"Param=='{press}'"), lon='Station_Longitude', lat='Station_Latitude',
                                 color="Number of Months Since Last Measurement",
                                 hover_name="Station_Name",
