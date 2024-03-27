@@ -17,6 +17,8 @@ df = df.drop(columns=['ts_name', 'from', 'to'])
 df.rename(columns={'station_latitude': 'Station_Latitude', 'station_longitude': 'Station_Longitude',
                    'station_name': "Station_Name", "Elapsed Time": "Elapsed_Time"}, inplace=True)
 
+df.loc[:, 'Basin'] = df.loc[:, 'Station_Name'].str[0:3]
+
 # Initialize the Dash app
 app = dash.Dash(__name__)
 
@@ -34,6 +36,18 @@ app.layout = html.Div([
         value='Manual',
         labelStyle={'display': 'inline-block'}
     ),
+    dcc.RadioItems(
+        id='basin-radio',
+        options=[
+            {'label': 'All Basins', 'value': 'all'},
+            {'label': 'Santa Rosa Plain', 'value': 'SRP'},
+            {'label': 'Sonoma Valley', 'value': 'Son'},
+            {'label': 'Petaluma Valley', 'value': 'PET'},
+            {'label': 'Lower Russian River', 'value': 'LRR'},
+        ],
+        value='all',
+        labelStyle={'display': 'inline-block'}
+    ),
     dash_table.DataTable(
         id='datatable',
         columns=[{'name': col, 'id': col} for col in df.columns],
@@ -49,45 +63,52 @@ app.layout = html.Div([
 # Define callback to update DataFrame based on radio button selection
 @app.callback(
     Output('datatable', 'data'),
-    [Input('filter-radio', 'value')]
+    [Input('filter-radio', 'value'),
+     Input('basin-radio', 'value')]
 )
-def update_dataframe(value):
+def update_dataframe(value, basin):
     # Implement your filtering condition here
     # Example: filtered_df = df[df['some_column'] > some_value]
 
     filtered_df = df[df['Param'] == value]
+
+    if basin != "all":
+        filtered_df = filtered_df.query(f"Basin=='{basin}'")
     # Replace the above line with your filtering condition
     # filtered_df = df  # Placeholder, replace with your actual filtering logic
     return filtered_df.to_dict('records')
-
 
 
 # Define callback to update map based on table selection
 @app.callback(
     Output('map-graph', 'figure'),
     [Input('datatable', 'selected_rows'),
-     Input('filter-radio', 'value')]
+     Input('filter-radio', 'value'),
+     Input('basin-radio', 'value')]
 )
-def update_map(selected_rows, press):
-
+def update_map(selected_rows, press, basin_):
     # No change in this callback function
     if selected_rows:
         selected_cities = df.iloc[selected_rows]['Station_Name']
         selected_rows = df[df['Station_Name'].isin(selected_cities)]
 
         selected_rows = selected_rows.query(f"Param=='{press}'")
-        fig = px.scatter_mapbox(selected_rows, lon='Station_Longitude', lat='Station_Latitude',
-                                color="Number of Months Since Last Measurement",
-                                hover_name="Station_Name",
-                                hover_data=["Station_Name", "station_no", "Number of Months Since Last Measurement"],
-                                size="Number of Months Since Last Measurement")
-    else:
 
-        fig = px.scatter_mapbox(df.query(f"Param=='{press}'"), lon='Station_Longitude', lat='Station_Latitude',
-                                color="Number of Months Since Last Measurement",
-                                hover_name="Station_Name",
-                                hover_data=["Station_Name", "station_no", "Number of Months Since Last Measurement"],
-                                size="Number of Months Since Last Measurement")
+        plotter = selected_rows
+
+    else:
+        plotter = df.query(f"Param=='{press}'")
+
+
+    if basin_ != "all":
+        plotter = plotter.query(f"Basin=='{basin_}'")
+
+    fig = px.scatter_mapbox(plotter, lon='Station_Longitude', lat='Station_Latitude',
+                            color="Number of Months Since Last Measurement",
+                            hover_name="Station_Name",
+                            hover_data=["Station_Name", "station_no", "Number of Months Since Last Measurement"],
+                            size="Number of Months Since Last Measurement")
+
     fig.update_layout(mapbox_style="open-street-map")
     return fig
 
