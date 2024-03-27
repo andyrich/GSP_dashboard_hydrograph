@@ -4,7 +4,7 @@ import dash
 from dash import dcc, html, Input, Output, State
 import dash_table
 import wiski_data
-import pressure_transducers
+import wiski_census
 
 # Sample DataFrame
 df = pressure_transducers.get_all()

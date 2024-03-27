@@ -3,7 +3,7 @@ from dash import dcc, html
 from dash.dependencies import Input, Output
 import urllib.parse
 import wiski_data
-import pressure_transducers
+import wiski_census
 import plotly.express as px
 from dash import dash_table
 import reservoir_storage
@@ -64,11 +64,9 @@ def update_inputs_from_url(search):
         ressy = params.get('RES',['False'])[0].lower() == 'true'
 
         if PRESSURE_MAP:
-
-
             if info is None:
                 print('loading PT')
-                info = pressure_transducers.layout()
+                info = wiski_census.get_all()
                 info = info.astype({"station_longitude":float,
                                     "station_latitude":float})
                 print('done loading PT...\n')
@@ -77,7 +75,19 @@ def update_inputs_from_url(search):
             dtable = dash_table.DataTable(
                 data=info.to_dict("records"),
                 columns=[{"name": col, "id": col} for col in info.columns],
-            )
+                editable=False,
+                filter_action="native",
+                sort_action="native",
+                sort_mode="multi",
+                column_selectable="single",
+                row_selectable="multi",
+                row_deletable=True,
+                selected_columns=[],
+                selected_rows=[],
+                page_action="native",
+                page_current=0,
+                page_size=10,
+            ),
 
             fig = px.scatter_geo(info, lon = 'station_longitude', lat = 'station_latitude',
                                  # locations="station_name",
@@ -88,6 +98,7 @@ def update_inputs_from_url(search):
                                  # # animation_frame="Elapsed Time",
                                  # projection="natural earth"
                                  )
+            fig.update_layout(mapbox_style="open-street-map")
 
             # fig.show()
             return fig, dtable  # Return figure and datatable
