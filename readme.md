@@ -19,7 +19,9 @@
 
 4) start the application:
 
-    python app_main.py
+    python app_multi.py (for the api-like version)
+    python app_time_since_update.py (for the map showing time since updates for manual measurements or pressure transducers)
+    python app_map.py (map of hydrographs with selection for depth/rmp's etc)
 
 ### to test app, try:
 
