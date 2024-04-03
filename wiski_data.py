@@ -358,7 +358,7 @@ class wiski_plot(object):
                               )
 
                 fig.add_hline(y=MO, line_dash="dot",
-                              line_color = 'lightyellow',
+                              line_color = 'green',
                               line_width = 6,
                               annotation_text="Measurable Objective",
                               annotation_position="top left",
