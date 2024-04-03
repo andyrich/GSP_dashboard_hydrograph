@@ -284,13 +284,13 @@ class wiski_plot(object):
                 tot['date'] = tot.index
                 tot = tot.groupby(pd.Grouper(freq='2QS')).first()
                 line = go.scatter.Line(color = 'grey')
-                if not RMP:
-                    fig.add_trace(go.Scatter(x=tot.date, y=tot.loc[:,'Manual Measurement'],
-                                             showlegend=False,
-                                          name= '' ,line = line,
-                                             legendgroup="group1",
-                                             legendgrouptitle_text="Groundwater Observations",
-                                             ))
+                # if not RMP:
+                #     fig.add_trace(go.Scatter(x=tot.date, y=tot.loc[:,'Manual Measurement'],
+                #                              showlegend=False,
+                #                           name= '' ,line = line,
+                #                              legendgroup="group1",
+                #                              legendgrouptitle_text="Groundwater Observations",
+                #                              ))
 
                 seasonal = False
 
