@@ -336,7 +336,7 @@ class wiski_plot(object):
                 fig.add_trace(go.Scatter(x=spring_df.index, y=spring_df.loc[:, 'Value'],
                                          mode='markers',
                                          marker=dict(
-                                             color='white',
+                                             color='grey',
                                              size=10,
                                              line=dict(
                                                  color='black',
