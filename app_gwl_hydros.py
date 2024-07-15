@@ -92,7 +92,7 @@ print(allinfo.loc[:,'RMP_MO_Shallow'].unique())
 allinfo = allinfo.rename(columns={'station_name': 'Station Name'})
 allinfo.index = allinfo.loc[:,'Station Name']
 
-
+assert "Depth_Category" in allinfo.columns, allinfo.head()
 
 if os.path.exists('manmeas.pickle'):
     man = pd.read_pickle('manmeas.pickle')
@@ -193,10 +193,10 @@ app.layout = html.Div([
     html.Div([
     html.Div([
         html.Button("Update Map", id="show-map", n_clicks=0),],
-        style = { 'display': 'inline-block', }),
+        style = {'width': '30%', 'display': 'inline-block', }),
     html.Div([
         html.Button("Show Hydrograph", id="show-image", n_clicks=0),],
-    style = { 'display': 'inline-block', },),],
+    style = {'width': '30%', 'display': 'inline-block', },),],
 
         style = {'width': '100%', 'display': 'inline-block', }),
 
@@ -323,7 +323,7 @@ def update_figure( depth, RMP_type, pressure, clicks):  # Modify the function pa
     if 'all' in [x.lower() for x in depth]:
         cdf = allinfo
     else:
-        cdf = allinfo.query(f"Web_GW_Obs_Range=={depth}")
+        cdf = allinfo.query(f"Depth_Category=={depth}")
 
 
 
@@ -376,7 +376,7 @@ def update_figure( depth, RMP_type, pressure, clicks):  # Modify the function pa
                                     lat="station_latitude",
                                     lon="station_longitude",
                                     hover_name="Station Name",
-                                    color='Web_GW_Obs_Range',
+                                    color='Depth_Category',
                                     )
         else:
             cur = ts_file.loc[ts_file.loc[:, 'station_name'].isin(cdf.loc[:, 'Station Name'])]
