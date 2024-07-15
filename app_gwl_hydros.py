@@ -152,7 +152,7 @@ app.layout = html.Div([
                 ],
                 labelStyle={"display": "block"},
                 value=["Shallow (0-200ft)", "Medium (200-500ft)", "Deep(>500ft)"],
-            ),], style={'display': 'inline-block'}),
+            ),], style={'width' : '20%', 'display': 'inline-block'}),
 
             html.Div([
             html.H5("Measurement Type"),
@@ -166,7 +166,7 @@ app.layout = html.Div([
                 # labelStyle={"display": "block"},
                 value="all",
                 multi=False,
-            ),], style={ 'display': 'inline-block', 'verticalAlign':'top'}),
+            ),], style={ 'width' : '20%', 'display': 'inline-block', 'verticalAlign':'top'}),
 
             html.Div([
             html.H5("Well Type"),
@@ -181,7 +181,7 @@ app.layout = html.Div([
 
                 value="All",
                 multi=False,
-            ),],  style={ 'display': 'inline-block', 'verticalAlign':'top'},
+            ),],  style={ 'width' : '20%','display': 'inline-block', 'verticalAlign':'top'},
                 # labelStyle={"display": "block"},
             )
         ],
@@ -193,10 +193,10 @@ app.layout = html.Div([
     html.Div([
     html.Div([
         html.Button("Update Map", id="show-map", n_clicks=0),],
-        style = {'width': '100%', 'display': 'inline-block', }),
+        style = { 'display': 'inline-block', }),
     html.Div([
         html.Button("Show Hydrograph", id="show-image", n_clicks=0),],
-    style = {'width': '100%', 'display': 'inline-block', },),],
+    style = { 'display': 'inline-block', },),],
 
         style = {'width': '100%', 'display': 'inline-block', }),
 
@@ -257,6 +257,7 @@ app.layout = html.Div([
 @callback(
     # Output('display-selected-values', 'children'),
     Output('graph', 'figure'),
+
     # Input('countries-radio', 'value'),
     Input('mapbox', 'selectedData'),
     Input("show-image", "n_clicks"),
@@ -421,6 +422,9 @@ def update_figure( depth, RMP_type, pressure, clicks):  # Modify the function pa
 
     # fig.update_geos(center = {'lat':get_loc(colorscale)[0][0], 'lon':get_loc(colorscale)[1][0] }, projection_scale = 1)
     return fig
+
+
+
 
 if __name__ == '__main__':
     app.run_server(debug=True, port = 8056)
