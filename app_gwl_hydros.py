@@ -13,6 +13,8 @@ import dash.html as html
 # import dash_html_components as html
 import pandas as pd
 import numpy as np
+
+import wiski_census
 import wiski_data
 import helper
 # dash.register_page(__name__, path='/')
@@ -90,6 +92,27 @@ print(allinfo.loc[:,'RMP_MO_Shallow'].unique())
 allinfo = allinfo.rename(columns={'station_name': 'Station Name'})
 allinfo.index = allinfo.loc[:,'Station Name']
 
+
+
+if os.path.exists('manmeas.pickle'):
+    man = pd.read_pickle('manmeas.pickle')
+else:
+    man = wiski_census.get_manual_measurements()
+    man.to_pickle('manmeas.pickle')
+
+if os.path.exists('press.pickle'):
+    press = pd.read_pickle('press.pickle')
+else:
+    press = wiski_census.get_recent_measurements()
+    press.to_pickle('press.pickle')
+
+
+man.loc[:, 'yearmin'] = pd.to_datetime(man.loc[:, 'from']).dt.year
+man.loc[:, 'yearmax'] = pd.to_datetime(man.loc[:, 'to']).dt.year
+
+press.loc[:, 'yearmin'] = pd.to_datetime(press.loc[:, 'from']).dt.year
+press.loc[:, 'yearmax'] = pd.to_datetime(press.loc[:, 'to']).dt.year
+
 print(allinfo.columns)
 print(allinfo.head())
 
@@ -108,14 +131,15 @@ all_options = {
 
 
 app.layout = html.Div([
-    html.H1("Waterlevel Hydrographs"),
+    html.H3("Waterlevel Hydrographs"),
     html.Div([
         dcc.Graph(id='mapbox', style={'width': '100%', 'height': '100vh'}),
     ], style={'width': '100%', 'display': 'inline-block'}),
 
-    html.Div([
+
         html.Div([
-            html.H1("Well Depth"),
+            html.Div([
+            html.H5("Well Depth"),
 
             dcc.Checklist(
                 id="checkbox",
@@ -128,8 +152,24 @@ app.layout = html.Div([
                 ],
                 labelStyle={"display": "block"},
                 value=["Shallow (0-200ft)", "Medium (200-500ft)", "Deep(>500ft)"],
-            ),
-            html.H1("Well Type"),
+            ),], style={'display': 'inline-block'}),
+
+            html.Div([
+            html.H5("Measurement Type"),
+            dcc.Dropdown(
+                id="pressure",
+                options=[
+                    {"label": "Manual Measurement", "value": "man"},
+                    {"label": "Pressure Transducer", "value": "press"},
+                    {"label": "All", "value": "all"},
+                ],
+                # labelStyle={"display": "block"},
+                value="all",
+                multi=False,
+            ),], style={ 'display': 'inline-block', 'verticalAlign':'top'}),
+
+            html.Div([
+            html.H5("Well Type"),
             dcc.Dropdown(
                 id="check_rmp",
                 options=[
@@ -138,28 +178,38 @@ app.layout = html.Div([
                     {"label": "Non-RMP", "value": "Non-RMP"},
                     {"label": "All", "value": "All"},
                 ],
-                # labelStyle={"display": "block"},
+
                 value="All",
                 multi=False,
-            ),
-        ], style={'width': '20%', 'display': 'inline-block'}),
+            ),],  style={ 'display': 'inline-block', 'verticalAlign':'top'},
+                # labelStyle={"display": "block"},
+            )
+        ],
+            style={'width': '100%', 'display': 'inline-block', 'verticalAlign':'top'}),
 
-    ]),
+
     html.Hr(),
     html.Div([  # Create a new div for the range slider
         dcc.RangeSlider(
             id='depth-slider',
-            min=1950,
-            max=2023,
+            min=1990,
+            max=2025,
             step=5,
-            marks={i: f"{i} ft" for i in range(1950, 2025, 5)},
-            value=[2010, 2015],
+            marks={i: f"{i}" for i in range(1950, 2025, 2)},
+            value=[2018, 2020],
         ),
     ], style={'width': '90%', 'margin': '0 auto', 'text-align': 'center'}),
-    html.Hr(),
-    html.Button("Show Hydrograph", id="show-image", n_clicks=0),
+    html.Div([
+    html.Div([
+        html.Button("Update Map", id="show-map", n_clicks=0),],
+        style = {'width': '100%', 'display': 'inline-block', }),
+    html.Div([
+        html.Button("Show Hydrograph", id="show-image", n_clicks=0),],
+    style = {'width': '100%', 'display': 'inline-block', },),],
+
+        style = {'width': '100%', 'display': 'inline-block', }),
+
     dcc.Graph(id='graph'),
-    html.Hr(),
 ])
 
 
@@ -255,14 +305,26 @@ def update_figure(colorscale, n_clicks):
 
 @callback(
     Output('mapbox', 'figure'),
-    [Input('mapbox', 'selectedData'),
+    [
+        # Input('mapbox', 'selectedData'),
      Input('checkbox', 'value'),
      Input('depth-slider', 'value'),
-     Input('check_rmp','value')]  # Add this input
+     Input('check_rmp','value'),
+     Input('pressure', 'value'),
+    Input("show-map", "n_clicks"),
+     ],
 )
-def update_figure(colorscale, depth, slider_value, RMP_type):  # Modify the function parameters
-    if colorscale is None:
-        colorscale = 'Son0001'
+def update_figure( depth, slider_value, RMP_type, pressure, clicks):  # Modify the function parameters
+    print(clicks)
+    ctx = dash.callback_context
+    if ctx.triggered[0]["prop_id"].split(".")[0] != "show-map":
+        print(ctx.triggered[0]["prop_id"])
+        print('preventing update')
+        raise PreventUpdate
+    else:
+        print(ctx.triggered[0]["prop_id"])
+        print('Allowing update')
+
 
     # Filter the data based on the depth range selected with the slider
     yearmin, yearmax = slider_value
@@ -275,8 +337,18 @@ def update_figure(colorscale, depth, slider_value, RMP_type):  # Modify the func
     ts.loc[:,'yearmin'] = pd.to_datetime(ts.loc[:,'from']).dt.year
     ts.loc[:, 'yearmax'] = pd.to_datetime(ts.loc[:, 'to']).dt.year
 
-    # Filter the data based on the year range
-    ts_file = ts[(ts['yearmin'] <= yearmin) & (ts['yearmax'] >= yearmax)]
+    print(f"it is of type {type(pressure)}")
+    print(f"this is the pressure variable {pressure}")
+    if pressure.lower() == 'all':
+        print('showing all')
+        # Filter the data based on the year range
+        ts_file = ts[(ts['yearmin'] <= yearmin) & (ts['yearmax'] >= yearmax)]
+    elif pressure[0].lower() == 'man':
+        print('showing manual')
+        ts_file = man[(man['yearmin'] <= yearmin) & (man['yearmax'] >= yearmax)]
+    else: #assume it's pressure
+        print('showing pressure')
+        ts_file = press[(press['yearmin'] <= yearmin) & (press['yearmax'] >= yearmax)]
 
     cdf = cdf.loc[cdf.loc[:,'Station Name'].isin(ts_file.loc[:,'station_name'])]
     def convert_empty_strings_to_nan(data_frame, column_name):
