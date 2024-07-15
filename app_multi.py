@@ -20,6 +20,10 @@ query strings like:
         plot_options NA
         plot_wet true/false
         seasonal ie true/false
+        
+        res = True for reservoir storage
+        
+        pressure_map = True
 
 '''
 app = dash.Dash(__name__)
@@ -59,11 +63,12 @@ def update_inputs_from_url(search):
         RMP = params.get('rmp', ['False'])[0].lower() == 'true'
         ISW = params.get('isw', ['False'])[0].lower() == 'true'
 
-        PRESSURE_MAP = params.get('PRESSURE_MAP', ['False'])[0].lower() == 'true'
-
+        PRESSURE_MAP = params.get('pressure_map', ['False'])[0].lower() == 'true'
+        print(f"plot type = {plot_type}")
         ressy = params.get('RES',['False'])[0].lower() == 'true'
 
         if PRESSURE_MAP:
+            print('doing pressure map')
             if info is None:
                 print('loading PT')
                 info = wiski_census.get_all()
@@ -89,16 +94,25 @@ def update_inputs_from_url(search):
                 page_size=10,
             ),
 
-            fig = px.scatter_geo(info, lon = 'station_longitude', lat = 'station_latitude',
-                                 # locations="station_name",
-                                 color="Elapsed Time",
-                                     hover_name="station_name",
-                                     size="Elapsed Time",
-                                 fitbounds='locations'
-                                 # # animation_frame="Elapsed Time",
-                                 # projection="natural earth"
-                                 )
+            fig = px.scatter_mapbox(info,  lat="station_latitude", lon="station_longitude", hover_name="station_name",
+                                hover_data=["Elapsed Time",'station_no'],
+                                    color="Elapsed Time",
+                                    size = "Elapsed Time",
+                                     height=300)
+
             fig.update_layout(mapbox_style="open-street-map")
+            fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
+
+            # fig = px.scatter_geo(info, lon = 'station_longitude', lat = 'station_latitude',
+            #                      # locations="station_name",
+            #                      color="Elapsed Time",
+            #                          hover_name="station_name",
+            #                          size="Elapsed Time",
+            #                      fitbounds='locations'
+            #                      # # animation_frame="Elapsed Time",
+            #                      # projection="natural earth"
+            #                      )
+            # fig.update_layout(mapbox_style="open-street-map")
 
             # fig.show()
             return fig, dtable  # Return figure and datatable
