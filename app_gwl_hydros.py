@@ -189,16 +189,7 @@ app.layout = html.Div([
 
 
     html.Hr(),
-    html.Div([  # Create a new div for the range slider
-        dcc.RangeSlider(
-            id='depth-slider',
-            min=1990,
-            max=2025,
-            step=5,
-            marks={i: f"{i}" for i in range(1950, 2025, 2)},
-            value=[2018, 2020],
-        ),
-    ], style={'width': '90%', 'margin': '0 auto', 'text-align': 'center'}),
+
     html.Div([
     html.Div([
         html.Button("Update Map", id="show-map", n_clicks=0),],
@@ -308,13 +299,13 @@ def update_figure(colorscale, n_clicks):
     [
         # Input('mapbox', 'selectedData'),
      Input('checkbox', 'value'),
-     Input('depth-slider', 'value'),
+     # Input('depth-slider', 'value'),
      Input('check_rmp','value'),
      Input('pressure', 'value'),
     Input("show-map", "n_clicks"),
      ],
 )
-def update_figure( depth, slider_value, RMP_type, pressure, clicks):  # Modify the function parameters
+def update_figure( depth, RMP_type, pressure, clicks):  # Modify the function parameters
     print(clicks)
     ctx = dash.callback_context
     if ctx.triggered[0]["prop_id"].split(".")[0] != "show-map":
@@ -326,29 +317,27 @@ def update_figure( depth, slider_value, RMP_type, pressure, clicks):  # Modify t
         print('Allowing update')
 
 
-    # Filter the data based on the depth range selected with the slider
-    yearmin, yearmax = slider_value
+
 
     if 'all' in [x.lower() for x in depth]:
         cdf = allinfo
     else:
         cdf = allinfo.query(f"Web_GW_Obs_Range=={depth}")
 
-    ts.loc[:,'yearmin'] = pd.to_datetime(ts.loc[:,'from']).dt.year
-    ts.loc[:, 'yearmax'] = pd.to_datetime(ts.loc[:, 'to']).dt.year
+
 
     print(f"it is of type {type(pressure)}")
     print(f"this is the pressure variable {pressure}")
     if pressure.lower() == 'all':
         print('showing all')
         # Filter the data based on the year range
-        ts_file = ts[(ts['yearmin'] <= yearmin) & (ts['yearmax'] >= yearmax)]
+        ts_file = ts.copy()
     elif pressure[0].lower() == 'man':
         print('showing manual')
-        ts_file = man[(man['yearmin'] <= yearmin) & (man['yearmax'] >= yearmax)]
+        ts_file = man.copy()
     else: #assume it's pressure
         print('showing pressure')
-        ts_file = press[(press['yearmin'] <= yearmin) & (press['yearmax'] >= yearmax)]
+        ts_file = press.copy()
 
     cdf = cdf.loc[cdf.loc[:,'Station Name'].isin(ts_file.loc[:,'station_name'])]
     def convert_empty_strings_to_nan(data_frame, column_name):
@@ -376,15 +365,29 @@ def update_figure( depth, slider_value, RMP_type, pressure, clicks):  # Modify t
         cdf = cdf.loc[~cdf.loc[:, ['RMP_Shallow','RMP_Shallow']].any(axis = 1)]
         # print(f"shape {cdf.shape}")
 
+    # cdf.loc[cdf.loc[:, 'Station Name'].isin(ts_file.loc[:, 'station_name'])]
+
+
 
     try:
-        fig = px.scatter_mapbox(cdf,
-                                lat="station_latitude",
-                            lon="station_longitude",
-                            hover_name="Station Name",
-                            color='Web_GW_Obs_Range',
-                            )
+        if pressure.lower() == 'all':
+            fig = px.scatter_mapbox(cdf,
+                                    lat="station_latitude",
+                                    lon="station_longitude",
+                                    hover_name="Station Name",
+                                    color='Web_GW_Obs_Range',
+                                    )
+        else:
+            cur = ts_file.loc[ts_file.loc[:, 'station_name'].isin(cdf.loc[:, 'Station Name'])]
+            print(cur.head())
+            cdf = pd.merge(cur, cdf.reset_index(drop = True), left_on= 'station_name', right_on = "Station Name")
+            print(cdf.head())
 
+            fig = px.scatter_mapbox(cdf,  lat="station_latitude", lon="station_longitude", hover_name="station_name",
+                                hover_data=["Elapsed Time",'station_no'],
+                                    color="Elapsed Time",
+                                    size = "Elapsed Time",
+                                     )
 
 
 
@@ -393,7 +396,8 @@ def update_figure( depth, slider_value, RMP_type, pressure, clicks):  # Modify t
         fig.update_layout(clickmode="event+select")
 
         print('the map figure does work')
-    except:
+    except Exception as e:
+        print(e)
         print('\n\nit DOES  fail\n\n')
         fig =  go.Figure()
     #
