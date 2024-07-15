@@ -110,8 +110,13 @@ all_options = {
 app.layout = html.Div([
     html.H1("Waterlevel Hydrographs"),
     html.Div([
+        dcc.Graph(id='mapbox', style={'width': '100%', 'height': '100vh'}),
+    ], style={'width': '100%', 'display': 'inline-block'}),
+
+    html.Div([
         html.Div([
             html.H1("Well Depth"),
+
             dcc.Checklist(
                 id="checkbox",
                 options=[
@@ -138,9 +143,7 @@ app.layout = html.Div([
                 multi=False,
             ),
         ], style={'width': '20%', 'display': 'inline-block'}),
-        html.Div([
-            dcc.Graph(id='mapbox'),
-        ], style={'width': '70%', 'display': 'inline-block'}),
+
     ]),
     html.Hr(),
     html.Div([  # Create a new div for the range slider
