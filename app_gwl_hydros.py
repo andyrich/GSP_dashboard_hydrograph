@@ -31,90 +31,101 @@ k = helper.get_kiwis()
 # pars = k.get_parameter_list(parametertype_name = "Groundw*", return_fields = ['station_name'])
 print('getting timeseries')
 
-if os.path.exists('ts.pickle'):
-    ts = pd.read_pickle('ts.pickle')
-else:
-    ts = pd.concat([k.get_timeseries_list(station_name = 'SRP*',
-                    parametertype_name = "Groundw*",
-                    return_fields = ['station_name', 'coverage','stationparameter_name']),
+def get_ts():
+    if os.path.exists('ts.pickle'):
+        ts = pd.read_pickle('ts.pickle')
+    else:
+        ts = pd.concat([k.get_timeseries_list(station_name = 'SRP*',
+                        parametertype_name = "Groundw*",
+                        return_fields = ['station_name', 'coverage','stationparameter_name']),
 
-                    k.get_timeseries_list(station_name = 'Son*',
-                    parametertype_name = "Groundw*",
-                    return_fields = ['station_name', 'coverage','stationparameter_name']),
+                        k.get_timeseries_list(station_name = 'Son*',
+                        parametertype_name = "Groundw*",
+                        return_fields = ['station_name', 'coverage','stationparameter_name']),
 
-                    k.get_timeseries_list(station_name = 'PET*',
-                    parametertype_name = "Groundw*",
-                    return_fields = ['station_name', 'coverage','stationparameter_name']),
+                        k.get_timeseries_list(station_name = 'PET*',
+                        parametertype_name = "Groundw*",
+                        return_fields = ['station_name', 'coverage','stationparameter_name']),
 
-                    k.get_timeseries_list(station_name = 'LRR*',
-                    parametertype_name = "Groundw*",
-                    return_fields = ['station_name', 'coverage','stationparameter_name'])])
-    ts.to_pickle('ts.pickle')
-print('-----------')
-print(ts.station_name.apply(lambda x:x[0:3]).unique())
-print('-----------')
+                        k.get_timeseries_list(station_name = 'LRR*',
+                        parametertype_name = "Groundw*",
+                        return_fields = ['station_name', 'coverage','stationparameter_name'])])
 
-# path = os.path.join('allinfo_stations.csv')
-
-# allinfo = pd.read_csv(path, index_col=[0])
-# allinfo = allinfo.rename(columns={'Station Name.1': 'Station Name'})
-# allinfo.loc[:, 'Station Name'] = allinfo.index
-print('getting get_station_list')
+        ts.to_pickle('ts.pickle')
+    return ts
 
 
-if os.path.exists('allinfo.pickle'):
-    allinfo = pd.read_pickle('allinfo.pickle')
-else:
-    allinfo = pd.concat([k.get_station_list(
-        return_fields =[ 'station_name', 'station_latitude','station_longitude', 'site_no','custom_attributes'],
-        parametertype_name = "Groundw*", site_no = 'SRP*'),
-        k.get_station_list(
-        return_fields=['station_name', 'station_latitude', 'station_longitude',  'site_no','custom_attributes'],
-        parametertype_name="Groundw*", site_no='Son'),
-        k.get_station_list(
-        return_fields=['station_name', 'station_latitude', 'station_longitude', 'site_no', 'custom_attributes'],
-        parametertype_name="Groundw*", site_no='PET*'),
-        k.get_station_list(
-        return_fields=['station_name', 'station_latitude', 'station_longitude', 'site_no', 'custom_attributes'],
-        parametertype_name="Groundw*", site_no='LRR*')
-    ]
-    )
-    allinfo.to_pickle("allinfo.pickle")
+def get_allstation():
+    if os.path.exists('allinfo.pickle'):
+        allinfo = pd.read_pickle('allinfo.pickle')
 
-allinfo.loc[:,'RMP_MO_Deep'] = allinfo.loc[:,'RMP_MO_Deep'].apply(lambda x: pd.to_numeric(x, errors='coerce'))
-allinfo.loc[:,'RMP_MO_Shallow'] = allinfo.loc[:,'RMP_MO_Shallow'].apply(lambda x: pd.to_numeric(x, errors='coerce'))
-# allinfo = allinfo.astype({"RMP_MO_Deep":np.float64, "RMP_MO_Shallow":np.float64}, errors = 'ignore')
-allinfo.loc[:,'RMP_Shallow'] = allinfo.loc[:,'RMP_MO_Shallow'].notnull()
-allinfo.loc[:,'RMP_Deep'] = allinfo.loc[:,'RMP_MO_Deep'].notnull()
+    else:
+        allinfo = pd.concat([k.get_station_list(
+            return_fields =[ 'station_name', 'station_latitude','station_longitude', 'site_no','custom_attributes'],
+            parametertype_name = "Groundw*", site_no = 'SRP*'),
+            k.get_station_list(
+            return_fields=['station_name', 'station_latitude', 'station_longitude',  'site_no','custom_attributes'],
+            parametertype_name="Groundw*", site_no='Son'),
+            k.get_station_list(
+            return_fields=['station_name', 'station_latitude', 'station_longitude', 'site_no', 'custom_attributes'],
+            parametertype_name="Groundw*", site_no='PET*'),
+            k.get_station_list(
+            return_fields=['station_name', 'station_latitude', 'station_longitude', 'site_no', 'custom_attributes'],
+            parametertype_name="Groundw*", site_no='LRR*')
+        ]
+        )
 
-print(allinfo.loc[:,'RMP_MO_Shallow'].unique())
+        allinfo.loc[:, 'RMP_MO_Deep'] = allinfo.loc[:, 'RMP_MO_Deep'].apply(lambda x: pd.to_numeric(x, errors='coerce'))
+        allinfo.loc[:, 'RMP_MO_Shallow'] = allinfo.loc[:, 'RMP_MO_Shallow'].apply(
+            lambda x: pd.to_numeric(x, errors='coerce'))
+        # allinfo = allinfo.astype({"RMP_MO_Deep":np.float64, "RMP_MO_Shallow":np.float64}, errors = 'ignore')
+        allinfo.loc[:, 'RMP_Shallow'] = allinfo.loc[:, 'RMP_MO_Shallow'].notnull()
+        allinfo.loc[:, 'RMP_Deep'] = allinfo.loc[:, 'RMP_MO_Deep'].notnull()
 
-allinfo = allinfo.rename(columns={'station_name': 'Station Name'})
-allinfo.index = allinfo.loc[:,'Station Name']
+        print(allinfo.loc[:, 'RMP_MO_Shallow'].unique())
 
-assert "Depth_Category" in allinfo.columns, allinfo.head()
+        allinfo = allinfo.rename(columns={'station_name': 'Station Name'})
+        allinfo.index = allinfo.loc[:, 'Station Name']
 
-if os.path.exists('manmeas.pickle'):
-    man = pd.read_pickle('manmeas.pickle')
-else:
-    man = wiski_census.get_manual_measurements()
-    man.to_pickle('manmeas.pickle')
+        allinfo.to_pickle("allinfo.pickle")
 
-if os.path.exists('press.pickle'):
-    press = pd.read_pickle('press.pickle')
-else:
-    press = wiski_census.get_recent_measurements()
-    press.to_pickle('press.pickle')
+    return allinfo
+
+def get_man():
+    if os.path.exists('manmeas.pickle'):
+        man = pd.read_pickle('manmeas.pickle')
+    else:
+        man = wiski_census.get_manual_measurements()
+        man.loc[:, 'yearmin'] = pd.to_datetime(man.loc[:, 'from']).dt.year
+        man.loc[:, 'yearmax'] = pd.to_datetime(man.loc[:, 'to']).dt.year
+        man.to_pickle('manmeas.pickle')
+    return man
+
+def get_press():
+    if os.path.exists('press.pickle'):
+        press = pd.read_pickle('press.pickle')
+    else:
+        press = wiski_census.get_recent_measurements()
+        press.loc[:, 'yearmin'] = pd.to_datetime(press.loc[:, 'from']).dt.year
+        press.loc[:, 'yearmax'] = pd.to_datetime(press.loc[:, 'to']).dt.year
+        press.to_pickle('press.pickle')
+    return press
 
 
-man.loc[:, 'yearmin'] = pd.to_datetime(man.loc[:, 'from']).dt.year
-man.loc[:, 'yearmax'] = pd.to_datetime(man.loc[:, 'to']).dt.year
+## load for first time
+allinfo = get_allstation()
+ts = get_ts()
+man = get_man()
+press = get_press()
 
-press.loc[:, 'yearmin'] = pd.to_datetime(press.loc[:, 'from']).dt.year
-press.loc[:, 'yearmax'] = pd.to_datetime(press.loc[:, 'to']).dt.year
+# delete files to make it re-load
+def remove():
+    os.remove('ts.pickle')
+    os.remove('manmeas.pickle')
+    os.remove('allinfo.pickle')
+    os.remove('press.pickle')
+    print('done removing files')
 
-print(allinfo.columns)
-print(allinfo.head())
 
 def get_loc(name):
     loci = allinfo[allinfo.loc[:, 'Station Name'] == name].loc[:, ['Station Name','station_latitude','station_longitude']]
@@ -196,7 +207,12 @@ app.layout = html.Div([
         style = {'width': '30%', 'display': 'inline-block', }),
     html.Div([
         html.Button("Show Hydrograph", id="show-image", n_clicks=0),],
-    style = {'width': '30%', 'display': 'inline-block', },),],
+    style = {'width': '30%', 'display': 'inline-block', },),
+    html.Div([
+        html.Button("Update data", id="dataupdate", n_clicks=0), ],
+        style={'width': '30%', 'display': 'inline-block', }),
+    html.Div(id='my-output'),
+    ],
 
         style = {'width': '100%', 'display': 'inline-block', }),
 
@@ -256,6 +272,25 @@ app.layout = html.Div([
 
 @callback(
     # Output('display-selected-values', 'children'),
+
+
+    # Input('countries-radio', 'value'),
+    Output(component_id='my-output', component_property='children'),
+    Input("dataupdate", "n_clicks"),
+    prevent_initial_call=True,
+)
+def update_figure( n_clicks):
+    ctx = dash.callback_context
+    if ctx.triggered[0]["prop_id"].split(".")[0] != "dataupdate":
+        print('preventing update')
+        raise PreventUpdate
+    else:
+        remove()
+
+    return "Press Update Map to Re-load from WISKI"
+
+@callback(
+    # Output('display-selected-values', 'children'),
     Output('graph', 'figure'),
 
     # Input('countries-radio', 'value'),
@@ -284,14 +319,7 @@ def update_figure(colorscale, n_clicks):
 
     x.get_station_pars(remove_pt=False)
     fig = x.plot_gw()
-    # plotly_fig = mpl_to_plotly(fig)
 
-    # fig = px.scatter(
-    #     dfi,
-    #     x="Timestamp", y="Manual Measurement",
-    #     color='name',
-    #     render_mode="webgl", title=title
-    # )
     return fig
 
 
@@ -318,7 +346,9 @@ def update_figure( depth, RMP_type, pressure, clicks):  # Modify the function pa
         print('Allowing update')
 
 
-
+    allinfo = get_allstation()
+    man = get_man()
+    press = get_press()
 
     if 'all' in [x.lower() for x in depth]:
         cdf = allinfo
