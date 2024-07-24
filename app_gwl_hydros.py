@@ -221,60 +221,7 @@ app.layout = html.Div([
 
 
 
-
-# # #update table
-# @callback(
-#     Output('well_info', 'children'),
-#     Input('mapbox', 'selectedData'))
-# def set_table_value(available_options):
-#     cur = available_options
-#     if cur is None:
-#         return go.Figure(data=[go.Table()]), ''''''
-#     else:
-#         cur = cur['points'][0]['hovertext']
-#         print(cur)
-#
-#     # table = go.Figure(data=[go.Table(
-#     # header=dict(values=list(allinfo.loc[:,:'APN Number'].columns),
-#     #             fill_color='paleturquoise',
-#     #             align='left'),
-#     # cells=dict(values=allinfo.loc[[cur],:'APN Number'].T.to_numpy().tolist(),
-#     #            fill_color='lavender',
-#     #            align='left'))])
-#
-#     vals = allinfo.loc[[cur], :].T.dropna().to_dict()
-#     # vals = allinfo.loc[[cur], :'APN Number'].T.dropna().to_dict()
-#     vals = vals[cur]
-#     d = [f"{k[0]}: {k[1]}" for k in vals.items()]
-#     mdown = '  \n'.join(d)
-#     print(mdown)
-#
-#     return mdown
-
-
-# # # #update table
-# @app.callback(
-#     Output('well_info', 'children'),
-#     Input('mapbox', 'selectedData'))
-# def set_markdown_value(available_options):
-#     if available_options is None:
-#         return go.Figure(data=[go.Table()])
-#     else:
-#         print('--asdf')
-#         print(available_options)
-#         available_options = available_options['points'][0]['hovertext']
-#         print(available_options)
-#
-#     wellinfo = '''asdfasdfasdf'''
-#
-#     return wellinfo
-
-
 @callback(
-    # Output('display-selected-values', 'children'),
-
-
-    # Input('countries-radio', 'value'),
     Output(component_id='my-output', component_property='children'),
     Input("dataupdate", "n_clicks"),
     prevent_initial_call=True,
@@ -286,8 +233,13 @@ def update_figure( n_clicks):
         raise PreventUpdate
     else:
         remove()
+        allinfo = get_allstation()
+        ts = get_ts()
+        man = get_man()
+        press = get_press()
 
-    return "Press Update Map to Re-load from WISKI"
+
+    return "Done Re-Loading Data"
 
 @callback(
     # Output('display-selected-values', 'children'),
