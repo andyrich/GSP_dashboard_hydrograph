@@ -33,8 +33,10 @@ print('getting timeseries')
 
 def get_ts():
     if os.path.exists('ts.pickle'):
+        print('loading ts pickle')
         ts = pd.read_pickle('ts.pickle')
     else:
+        print('loading ts from wiski')
         ts = pd.concat([k.get_timeseries_list(station_name = 'SRP*',
                         parametertype_name = "Groundw*",
                         return_fields = ['station_name', 'coverage','stationparameter_name']),
@@ -57,9 +59,11 @@ def get_ts():
 
 def get_allstation():
     if os.path.exists('allinfo.pickle'):
+        print('loading allinfo from pickle')
         allinfo = pd.read_pickle('allinfo.pickle')
 
     else:
+        print('loading allinfo from wiski')
         allinfo = pd.concat([k.get_station_list(
             return_fields =[ 'station_name', 'station_latitude','station_longitude', 'site_no','custom_attributes'],
             parametertype_name = "Groundw*", site_no = 'SRP*'),
@@ -93,8 +97,10 @@ def get_allstation():
 
 def get_man():
     if os.path.exists('manmeas.pickle'):
+        print('loading manmeas from pickle')
         man = pd.read_pickle('manmeas.pickle')
     else:
+        print('loading manmeas from wiski_census')
         man = wiski_census.get_manual_measurements()
         man.loc[:, 'yearmin'] = pd.to_datetime(man.loc[:, 'from']).dt.year
         man.loc[:, 'yearmax'] = pd.to_datetime(man.loc[:, 'to']).dt.year
@@ -103,8 +109,10 @@ def get_man():
 
 def get_press():
     if os.path.exists('press.pickle'):
+        print('loading press from pickle')
         press = pd.read_pickle('press.pickle')
     else:
+        print('loading get_recent_measurements from wiski_census')
         press = wiski_census.get_recent_measurements()
         press.loc[:, 'yearmin'] = pd.to_datetime(press.loc[:, 'from']).dt.year
         press.loc[:, 'yearmax'] = pd.to_datetime(press.loc[:, 'to']).dt.year
