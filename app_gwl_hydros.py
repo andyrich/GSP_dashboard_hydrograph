@@ -212,15 +212,19 @@ app.layout = html.Div([
     html.Div([
     html.Div([
         html.Button("Update Map", id="show-map", n_clicks=0),],
-        style = {'width': '30%', 'display': 'inline-block', }),
+        style = {'width': '20%', 'display': 'inline-block', }),
     html.Div([
         html.Button("Show Hydrograph", id="show-image", n_clicks=0),],
-    style = {'width': '30%', 'display': 'inline-block', },),
+    style = {'width': '20%', 'display': 'inline-block', },),
     html.Div([
         html.Button("Update data", id="dataupdate", n_clicks=0), ],
-        style={'width': '30%', 'display': 'inline-block', }),
+        style={'width': '20%', 'display': 'inline-block', }),
     html.Div(id='my-output'),
-    ],
+
+    html.Div([
+        html.Button("Download Data", id="download-data", n_clicks=0), ],
+        style={'width': '20%', 'display': 'inline-block'}),
+    dcc.Download(id="download-link"),],
 
         style = {'width': '100%', 'display': 'inline-block', }),
 
@@ -310,20 +314,28 @@ def update_figure( depth, RMP_type, pressure, clicks):  # Modify the function pa
     man = get_man()
     press = get_press()
 
-    if 'all' in [x.lower() for x in depth]:
+    print(f"depth is of type {type(depth)}")
+    print(f"this is the depth variable {depth}")
+    if isinstance(depth, list):
+        if 'all' in [x.lower() for x in depth]:
+            cdf = allinfo
+        else:
+            # cdf = allinfo.query(f"Depth_Category=={depth}")
+            # print(allinfo.Depth_Category.unique())
+            cdf = allinfo.loc[allinfo.Depth_Category.isin(depth)]
+    elif 'all' == depth.lower():
         cdf = allinfo
     else:
         cdf = allinfo.query(f"Depth_Category=={depth}")
 
 
-
-    print(f"it is of type {type(pressure)}")
+    print(f"pressure is of type {type(pressure)}")
     print(f"this is the pressure variable {pressure}")
     if pressure.lower() == 'all':
         print('showing all')
         # Filter the data based on the year range
         ts_file = ts.copy()
-    elif pressure[0].lower() == 'man':
+    elif pressure.lower() == 'man':
         print('showing manual')
         ts_file = man.copy()
     else: #assume it's pressure
@@ -370,15 +382,34 @@ def update_figure( depth, RMP_type, pressure, clicks):  # Modify the function pa
                                     )
         else:
             cur = ts_file.loc[ts_file.loc[:, 'station_name'].isin(cdf.loc[:, 'Station Name'])]
-            print(cur.head())
-            cdf = pd.merge(cur, cdf.reset_index(drop = True), left_on= 'station_name', right_on = "Station Name")
-            print(cdf.head())
 
-            fig = px.scatter_mapbox(cdf,  lat="station_latitude", lon="station_longitude", hover_name="station_name",
-                                hover_data=["Elapsed Time",'station_no'],
+            cdf = pd.merge(cur, cdf.reset_index(drop = True), left_on= 'station_name', right_on = "Station Name")
+
+            cdf.loc[:,"Elapsed Time Min"] = cdf.loc[:, "Elapsed Time"].copy()
+            cdf.loc[cdf.loc[:,"Elapsed Time Min"]<3, "Elapsed Time Min"] = 3
+            print(cdf.loc[:,"Elapsed Time"].min())
+
+
+            fig = px.scatter_mapbox(cdf,  lat="station_latitude",
+                                    lon="station_longitude", hover_name="station_name",
+                                # hover_data=["Elapsed Time",'station_no'],
                                     color="Elapsed Time",
-                                    size = "Elapsed Time",
+                                    size = "Elapsed Time Min",
+                                    size_max= 15,
+                                    hover_data={"Elapsed Time": True,
+                                                'station_no': True,
+                                                "station_latitude": False,
+                                                "station_longitude": False,
+                                                "Elapsed Time Min": False},
                                      )
+
+            if cdf.shape[1]>10:
+                if "Source" in cdf.columns:
+                    cdf = cdf.loc[:,:'Source']
+                else:
+                    cdf = cdf.iloc[:,:13]
+
+            cdf.to_pickle('cur_selection.pickle')
 
 
 
@@ -413,7 +444,24 @@ def update_figure( depth, RMP_type, pressure, clicks):  # Modify the function pa
     # fig.update_geos(center = {'lat':get_loc(colorscale)[0][0], 'lon':get_loc(colorscale)[1][0] }, projection_scale = 1)
     return fig
 
+@app.callback(
+    Output("download-link", "data"),
+    [Input("download-data", "n_clicks")],
+    prevent_initial_call=True,
+)
+def download_data(n_clicks):
+    if n_clicks == 0:
+        raise PreventUpdate
 
+    if os.path.exists("cur_selection.pickle"):
+        filtered_data = pd.read_pickle("cur_selection.pickle")
+    else:
+        filtered_data  = pd.DataFrame()
+
+    # Generate CSV content based on filtered data
+    csv_string = filtered_data.to_csv(index=False, encoding='utf-8')
+
+    return dict(content=csv_string, filename='filtered_data.csv')
 
 
 if __name__ == '__main__':
