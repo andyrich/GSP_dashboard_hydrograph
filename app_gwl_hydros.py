@@ -217,7 +217,7 @@ app.layout = html.Div([
         html.Button("Show Hydrograph", id="show-image", n_clicks=0),],
     style = {'width': '30%', 'display': 'inline-block', },),
     html.Div([
-        html.Button("Update data\n(may take a few minutes)", id="dataupdate", n_clicks=0), ],
+        html.Button("Update data", id="dataupdate", n_clicks=0), ],
         style={'width': '30%', 'display': 'inline-block', }),
     html.Div(id='my-output'),
     ],
