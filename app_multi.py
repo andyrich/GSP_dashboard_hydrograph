@@ -7,6 +7,7 @@ import wiski_census
 import plotly.express as px
 from dash import dash_table
 import reservoir_storage
+import readme
 
 info = None
 
@@ -33,7 +34,8 @@ server = app.server
 # Create the layout of the app
 app.layout = html.Div([
     dcc.Location(id="url", refresh=False),
-    dcc.Graph(id="interactive-plot"),
+    # dcc.Graph(id="interactive-plot"),
+    html.Div(id="main-content"),  # Dynamic content container
     html.Div(
         id="datatable-container",
         children=[],  # Initially empty datatable container
@@ -44,7 +46,7 @@ app.layout = html.Div([
 
 # Callback function to update plot or datatable based on URL parameters
 @app.callback(
-    Output("interactive-plot", "figure"),
+    Output("main-content", "children"),
     Output("datatable-container", "children"),
     [Input("url", "search")],
     cache_reasoning="no-action"  # Prevent unnecessary cache invalidation
@@ -66,6 +68,8 @@ def update_inputs_from_url(search):
         PRESSURE_MAP = params.get('pressure_map', ['False'])[0].lower() == 'true'
         print(f"plot type = {plot_type}")
         ressy = params.get('RES',['False'])[0].lower() == 'true'
+        print(f"ressy = {ressy}")
+        print(f"pressure map = {PRESSURE_MAP}")
 
         if PRESSURE_MAP:
             print('doing pressure map')
@@ -102,7 +106,7 @@ def update_inputs_from_url(search):
 
             fig.update_layout(mapbox_style="open-street-map")
             fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
-
+            print('done with dtable')
             # fig = px.scatter_geo(info, lon = 'station_longitude', lat = 'station_latitude',
             #                      # locations="station_name",
             #                      color="Elapsed Time",
@@ -115,7 +119,7 @@ def update_inputs_from_url(search):
             # fig.update_layout(mapbox_style="open-street-map")
 
             # fig.show()
-            return fig, dtable  # Return figure and datatable
+            return dcc.Graph(figure=fig), dtable  # Return figure and datatable
 
         elif ressy:
             if station_name.lower() == "son":
@@ -128,7 +132,7 @@ def update_inputs_from_url(search):
                 fig = reservoir_storage.plot_men(act_mendo, stor_mendo)
 
 
-            return fig, {}
+            return dcc.Graph(figure=fig), {}
         else:
             remove_pt = plot_type =='MM'
 
@@ -137,11 +141,12 @@ def update_inputs_from_url(search):
             fig = x.plot_gw(plot_wet = plot_wet, seasonal=seasonal, RMP=RMP, isw = ISW)
 
 
-            return fig, {}
+            return dcc.Graph(figure=fig), {}
     else:
-        print("serach is NONE")
+        print("search is NONE")
+        README = readme.read_me()
         # If no search parameters, return empty figure/datatable
-        return {}, None
+        return README, None
 
 
 def parse_plot_options(options):
