@@ -616,26 +616,7 @@ def update_figure( depth, monAgency, RMP_type, activemon, MonSGMA, pressure, cli
         print(e)
         print('\n\nit DOES  fail\n\n')
         fig =  go.Figure()
-    #
-    # fig.add_trace(go.Scattermapbox(
-    #     lat=get_loc(colorscale)[0],
-    #     lon=get_loc(colorscale)[1],
-    #     mode='markers+text',
-    #     marker=go.scattermapbox.Marker(
-    #         size=20,
-    #         color='rgb(0, 0, 0)',
-    #         opacity=1.00,
-    #         symbol = 'circle'
-    #     ),
-    #
-    #     name = colorscale,
-    #     # hoverinfo='none',
-    #     text = [colorscale]
-    #
-    # )
-    # )
 
-    # fig.update_geos(center = {'lat':get_loc(colorscale)[0][0], 'lon':get_loc(colorscale)[1][0] }, projection_scale = 1)
     return fig
 
 @app.callback(
