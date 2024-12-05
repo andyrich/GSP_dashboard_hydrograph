@@ -39,6 +39,11 @@ make sure procfile refers to which webapp you're pusing to.
 
 for socogsp, file is app_multi and for monitoring network it is app_gwl_hydros
 
+## push to heroku
+
+`git push heroku master`  
+
+
 ### to test app, try:
 
     http://127.0.0.1:8053/?station_name=Son0001

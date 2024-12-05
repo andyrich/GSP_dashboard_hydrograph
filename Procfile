@@ -1,1 +1,1 @@
-web: gunicorn app_gwl_multi:server --timeout 600
+web: gunicorn app_gwl_hydros:server --timeout 600
