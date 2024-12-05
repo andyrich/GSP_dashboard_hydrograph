@@ -82,6 +82,10 @@ def get_gw_mon_status(station):
     x.loc[:,'LastManMeas'] = pd.to_datetime(x.loc[:,'LastManMeas'], errors='coerce')
     x.loc[:, 'LastPressMeas'] = pd.to_datetime(x.loc[:, 'LastPressMeas'], errors='coerce')
 
+    x.loc[:,'Depth_Category'] = x.loc[:,'Depth_Category'].fillna('Other')
+
+    x.loc[x.loc[:,'Depth_Category'].str.contains('Deep'),'Depth_Category'] = "Deep(>500ft)"
+
     x = x.astype({'LastPressMeas': 'datetime64[ns]',
                       'LastPressMeas': 'datetime64[ns]'})
 
@@ -112,7 +116,8 @@ def get_allstation_via_station_char(reload_from_wiski = False):
 
         ]
         )
-        print(allinfo.head())
+        # print(allinfo.head())
+        # print(allinfo.MonAgency.unique())
 
         # allinfo.loc[:, 'RMP_MO_Deep'] = allinfo.loc[:, 'RMP_MO_Deep'].apply(lambda x: pd.to_numeric(x, errors='coerce'))
         # allinfo.loc[:, 'RMP_MO_Shallow'] = allinfo.loc[:, 'RMP_MO_Shallow'].apply(
@@ -137,7 +142,7 @@ def get_man():
     man = pd.read_pickle('allinfo.pickle')
     man.loc[:, 'LastManMeas'] = pd.to_datetime(man.loc[:, 'LastManMeas'], errors='coerce')
     man = man.loc[man.LastManMeas.notnull()]
-    print(man.dtypes)
+    # print(man.dtypes)
 
     # man.loc[:, 'yearmin'] = pd.to_datetime(man.loc[:, 'from']).dt.year
     man.loc[:, 'yearmax'] = pd.to_datetime(man.loc[:, 'LastManMeas']).dt.year
@@ -161,8 +166,8 @@ def get_press():
 
 def get_meas_date_info(raw, column = "LastManMeas"):
     # re-label
-    print(raw.dtypes)
-    print(raw.head())
+    # print(raw.dtypes)
+    # print(raw.head())
 
     raw.loc[:, 'date'] = pd.to_datetime(raw.loc[:, column], errors='coerce')
 
@@ -236,6 +241,9 @@ app.layout = html.Div([
             html.Div([
                 html.H5("Monitoring Agency"),
 
+
+
+
                 dcc.Checklist(
                     id="monagency",
                     options=[
@@ -245,6 +253,8 @@ app.layout = html.Div([
                         {"label": 'Petaluma Valley GSA', "value": 'Petaluma Valley GSA'},
                         {"label": 'Santa Rosa Plain GSA', "value": 'Santa Rosa Plain GSA'},
                         {"label": 'Sonoma Resource Conservation District', "value": 'Sonoma Resource Conservation District'},
+                        {"label": 'Sonoma County PRMD', "value": 'Sonoma County PRMD'},
+                        {"label": 'City of Petaluma', "value": 'City of Petaluma Public Works and Utilities Department'},
                         {"label": "All", "value": "All"},
                     ],
                     labelStyle={"display": "block"},
@@ -263,7 +273,28 @@ app.layout = html.Div([
                 # labelStyle={"display": "block"},
                 value="all",
                 # multi=False,
-            ),], style={ 'width' : '20%', 'display': 'inline-block', 'verticalAlign':'top'}),
+            ),
+
+                html.Div([
+                    html.H5("Well Type"),
+                    dcc.Dropdown(
+                        id="check_rmp",
+                        options=[
+                            {"label": "RMP", "value": "RMP"},
+                            # {"label": "RMP Deep", "value": "RMP_Deep"},
+                            {"label": "Non-RMP", "value": "Non-RMP"},
+                            {"label": "All", "value": "All"},
+                        ],
+
+                        value="All",
+                        multi=False,
+                    ),
+                ],
+                    # style={ 'width' : '20%','display': 'inline-block', 'verticalAlign':'top'},
+                    # labelStyle={"display": "block"},
+                )
+
+            ], style={ 'width' : '20%', 'display': 'inline-block', 'verticalAlign':'top'}),
 
             html.Div([
                 html.H5("Actively Monitored"),
@@ -297,23 +328,24 @@ app.layout = html.Div([
             ], style={'width': '20%', 'display': 'inline-block', 'verticalAlign': 'top'}),
 
 
-            html.Div([
-            html.H5("Well Type"),
-            dcc.Dropdown(
-                id="check_rmp",
-                options=[
-                    {"label": "RMP", "value": "RMP"},
-                    # {"label": "RMP Deep", "value": "RMP_Deep"},
-                    {"label": "Non-RMP", "value": "Non-RMP"},
-                    {"label": "All", "value": "All"},
-                ],
-
-                value="All",
-                multi=False,
-            ),
-            ],  style={ 'width' : '20%','display': 'inline-block', 'verticalAlign':'top'},
-                # labelStyle={"display": "block"},
-            )
+            # html.Div([
+            # html.H5("Well Type"),
+            # dcc.Dropdown(
+            #     id="check_rmp",
+            #     options=[
+            #         {"label": "RMP", "value": "RMP"},
+            #         # {"label": "RMP Deep", "value": "RMP_Deep"},
+            #         {"label": "Non-RMP", "value": "Non-RMP"},
+            #         {"label": "All", "value": "All"},
+            #     ],
+            #
+            #     value="All",
+            #     multi=False,
+            # ),
+            # ],
+            #     # style={ 'width' : '20%','display': 'inline-block', 'verticalAlign':'top'},
+            #     # labelStyle={"display": "block"},
+            # )
         ],
             style={'width': '100%', 'display': 'inline-block', 'verticalAlign':'top'}),
 
@@ -352,7 +384,7 @@ app.layout = html.Div([
 def update_figure( n_clicks):
     ctx = dash.callback_context
     if ctx.triggered[0]["prop_id"].split(".")[0] != "dataupdate":
-        print('preventing update')
+        # print('preventing update')
         raise PreventUpdate
     else:
         remove()
@@ -384,7 +416,7 @@ def update_figure(colorscale, n_clicks):
         colorscale = "Son0001"
     else:
         colorscale = colorscale['points'][0]['hovertext']
-        print(colorscale)
+        # print(colorscale)
 
         # dfi = df_meas.query(f"station_name=='{colorscale}'")
     #
@@ -414,15 +446,15 @@ Input('MonSGMA', 'value'),
      ],
 )
 def update_figure( depth, monAgency, RMP_type, activemon, MonSGMA, pressure, clicks):  # Modify the function parameters
-    print(clicks)
+    # print(clicks)
     ctx = dash.callback_context
     if ctx.triggered[0]["prop_id"].split(".")[0] != "show-map":
         print(ctx.triggered[0]["prop_id"])
-        print('preventing update')
+        # print('preventing update')
         raise PreventUpdate
     else:
         print(ctx.triggered[0]["prop_id"])
-        print('Allowing update')
+        # print('Allowing update')
 
 
     # allinfo = get_allstation()
@@ -498,15 +530,13 @@ def update_figure( depth, monAgency, RMP_type, activemon, MonSGMA, pressure, cli
                       'station_latitude': np.float64},  errors='ignore')
     cdf = cdf.dropna(subset = 'station_longitude')
 
-    print(RMP_type)
-    print(type(RMP_type))
     if RMP_type == "RMP":
         cdf = cdf.loc[cdf.loc[:,'MonRMP']]
 
     elif RMP_type == "Non-RMP":
-        print('sel non')
+        # print('sel non')
         # print(f"shape {cdf.shape}")
-        print(cdf.MonRMP.unique())
+        # print(cdf.MonRMP.unique())
         cdf =  cdf.loc[cdf.loc[:,'MonRMP']==False]
         # print(f"shape {cdf.shape}")
 
@@ -543,7 +573,7 @@ def update_figure( depth, monAgency, RMP_type, activemon, MonSGMA, pressure, cli
             # cdf.loc[:,"Elapsed Time Min"] = cdf.loc[:, "Elapsed Time"].copy()
             # cdf.loc[cdf.loc[:,"Elapsed Time Min"]<3, "Elapsed Time Min"] = 3
             # print(cdf.loc[:,"Elapsed Time"].min())
-            print(cur.head().station_longitude.values)
+            # print(cur.head().station_longitude.values)
             cur.loc[:, 'size'] = marker_size
 
             fig = px.scatter_mapbox(cur,  lat="station_latitude",
