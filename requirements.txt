@@ -17,6 +17,7 @@ tenacity
 Werkzeug
 pandas
 lxml
+html5lib
 geopandas
 #folium
 matplotlib
