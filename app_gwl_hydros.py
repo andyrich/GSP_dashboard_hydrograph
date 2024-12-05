@@ -253,7 +253,7 @@ app.layout = html.Div([
 
             html.Div([
             html.H5("Measurement Type"),
-            dcc.Dropdown(
+            dcc.RadioItems(
                 id="pressure",
                 options=[
                     {"label": "Manual Measurement", "value": "man"},
@@ -262,9 +262,39 @@ app.layout = html.Div([
                 ],
                 # labelStyle={"display": "block"},
                 value="all",
-                multi=False,
+                # multi=False,
             ),], style={ 'width' : '20%', 'display': 'inline-block', 'verticalAlign':'top'}),
 
+            html.Div([
+                html.H5("Actively Monitored"),
+
+                dcc.RadioItems(
+                    id="activemon",
+                    options=[
+                        {"label": "Actively Monitored", "value": 'active'},
+                        {"label": "Not Actively Monitored", "value": 'inactive'},
+                        {"label": "All", "value": "all"},
+                    ],
+                    # labelStyle={"display": "block"},
+                    value="active",
+                    # multi=False,
+                ),
+
+                html.H5("SGMA Well"),
+                dcc.RadioItems(
+                    id="MonSGMA",
+                    options=[
+                        {"label": "SGMA", "value": 'sgma'},
+                        {"label": "Not SGMA", "value": 'nonsgmaa'},
+                        {"label": "All", "value": "all"},
+                    ],
+                    # labelStyle={"display": "block"},
+                    value="all",
+                    # multi=False,
+                ),
+
+
+            ], style={'width': '20%', 'display': 'inline-block', 'verticalAlign': 'top'}),
 
 
             html.Div([
@@ -280,7 +310,8 @@ app.layout = html.Div([
 
                 value="All",
                 multi=False,
-            ),],  style={ 'width' : '20%','display': 'inline-block', 'verticalAlign':'top'},
+            ),
+            ],  style={ 'width' : '20%','display': 'inline-block', 'verticalAlign':'top'},
                 # labelStyle={"display": "block"},
             )
         ],
@@ -375,11 +406,14 @@ def update_figure(colorscale, n_clicks):
     Input('monagency', 'value'),
      # Input('depth-slider', 'value'),
      Input('check_rmp','value'),
+        Input('activemon', 'value'),
+Input('MonSGMA', 'value'),
+
      Input('pressure', 'value'),
     Input("show-map", "n_clicks"),
      ],
 )
-def update_figure( depth, monAgency, RMP_type, pressure, clicks):  # Modify the function parameters
+def update_figure( depth, monAgency, RMP_type, activemon, MonSGMA, pressure, clicks):  # Modify the function parameters
     print(clicks)
     ctx = dash.callback_context
     if ctx.triggered[0]["prop_id"].split(".")[0] != "show-map":
@@ -424,6 +458,19 @@ def update_figure( depth, monAgency, RMP_type, pressure, clicks):  # Modify the 
     else:
         cdf = cdf.query(f"MonAgency=={monAgency}")
 
+    print(f"activemon is of type {type(activemon)}")
+    print(f"this is the activemon variable {activemon}")
+
+
+    if 'all' == activemon.lower():
+        cdf = cdf
+    else:
+        cdf = cdf.loc[cdf.ActiveMon==(activemon=='active')]
+
+    if 'all' == MonSGMA.lower():
+        cdf = cdf
+    else:
+        cdf = cdf.loc[cdf.MonSGMA==(MonSGMA=='sgma')]
 
     print(f"pressure is of type {type(pressure)}")
     print(f"this is the pressure variable {pressure}")
@@ -478,8 +525,15 @@ def update_figure( depth, monAgency, RMP_type, pressure, clicks):  # Modify the 
                                     lon="station_longitude",
                                     hover_name="Station Name",
                                     color='Depth_Category',
-                                    size = 'size'
-                                    )
+                                    size = 'size',
+
+                                hover_data = {
+                                              'station_no': True,
+
+
+                                             },
+            )
+
         else:
             print(f"shape of ts_file is {ts_file.shape}")
             cur = ts_file.loc[ts_file.loc[:, 'Station Name'].isin(cdf.loc[:, 'Station Name'])]
