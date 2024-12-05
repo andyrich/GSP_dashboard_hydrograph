@@ -1,3 +1,4 @@
+import datetime
 import os
 from plotly.tools import mpl_to_plotly
 import plotly.express as px
@@ -56,37 +57,71 @@ def get_ts():
         ts.to_pickle('ts.pickle')
     return ts
 
+def get_gw_mon_status(station):
+    '''
+    get the gw_monitiring station dataa:
+        'OwnerMon, MonSiteFreq, MonSGMASiteCode, MonSGMA, MonRMP, MonCASGEM, MonAgency, LastPressMeas, LastManMeas, ActivPress, ActiveMon'
+    Args:
+        station:
 
-def get_allstation():
-    if os.path.exists('allinfo.pickle'):
+    Returns: df with station name, location, object type and fields listed above.
+    '''
+
+
+    ur1 = r'https://www2.kisters.net/sonomacountygroundwater/KiWIS/KiWIS?service=kisters&type=queryServices&request=getStationList&datasource=0&format=html&station_name='
+    ur2 = r'&returnfields=station_name,station_no,site_name,station_latitude,station_longitude,object_type,ca_sta&ca_sta_returnfields='
+    ur3 = r'Subbasin_Name,site_no,'
+    ur4 = 'OwnerMon, MonSiteFreq, MonSGMASiteCode, MonSGMA, MonRMP, MonCASGEM, MonAgency, LastPressMeas, LastManMeas, ActivPress, ActiveMon,Depth_Category'.replace(' ','')
+    url_send = ur1 + station + ur2 + ur3+ur4
+    content = helper.wiski_request_ssl(url_send)
+    x = pd.read_html(content, header=0)
+    x = x[0]
+    x = x.loc[x.object_type.str.lower().str.contains('gw monitoring', na = False)]
+    x = x.dropna(subset='station_name')
+    # raw[column] = pd.to_datetime(raw[column], errors='coerce')  # Ensures proper datetime conversion
+    x.loc[:,'LastManMeas'] = pd.to_datetime(x.loc[:,'LastManMeas'], errors='coerce')
+    x.loc[:, 'LastPressMeas'] = pd.to_datetime(x.loc[:, 'LastPressMeas'], errors='coerce')
+
+    x = x.astype({'LastPressMeas': 'datetime64[ns]',
+                      'LastPressMeas': 'datetime64[ns]'})
+
+    rep = "MonSGMA 	MonRMP 	MonCASGEM 	  	ActivPress 	ActiveMon".split()
+
+    for c in rep:
+        x.loc[:, c] = x.loc[:, c].fillna(False)
+        x.loc[:, c] = x.loc[:, c].replace({'yes': True, 'no': False})
+
+    return x
+
+
+
+def get_allstation_via_station_char(reload_from_wiski = False):
+    if (not reload_from_wiski) and os.path.exists('allinfo.pickle'):
         print('loading allinfo from pickle')
         allinfo = pd.read_pickle('allinfo.pickle')
 
     else:
         print('loading allinfo from wiski')
-        allinfo = pd.concat([k.get_station_list(
-            return_fields =[ 'station_name', 'station_latitude','station_longitude', 'site_no','custom_attributes'],
-            parametertype_name = "Groundw*", site_no = 'SRP*'),
-            k.get_station_list(
-            return_fields=['station_name', 'station_latitude', 'station_longitude',  'site_no','custom_attributes'],
-            parametertype_name="Groundw*", site_no='Son'),
-            k.get_station_list(
-            return_fields=['station_name', 'station_latitude', 'station_longitude', 'site_no', 'custom_attributes'],
-            parametertype_name="Groundw*", site_no='PET*'),
-            k.get_station_list(
-            return_fields=['station_name', 'station_latitude', 'station_longitude', 'site_no', 'custom_attributes'],
-            parametertype_name="Groundw*", site_no='LRR*')
+        allinfo = pd.concat(
+            [
+                get_gw_mon_status('SRP*'),
+                get_gw_mon_status('Son*'),
+                get_gw_mon_status('PET*'),
+                get_gw_mon_status('LRR*'),
+
+
         ]
         )
+        print(allinfo.head())
 
-        allinfo.loc[:, 'RMP_MO_Deep'] = allinfo.loc[:, 'RMP_MO_Deep'].apply(lambda x: pd.to_numeric(x, errors='coerce'))
-        allinfo.loc[:, 'RMP_MO_Shallow'] = allinfo.loc[:, 'RMP_MO_Shallow'].apply(
-            lambda x: pd.to_numeric(x, errors='coerce'))
-        # allinfo = allinfo.astype({"RMP_MO_Deep":np.float64, "RMP_MO_Shallow":np.float64}, errors = 'ignore')
-        allinfo.loc[:, 'RMP_Shallow'] = allinfo.loc[:, 'RMP_MO_Shallow'].notnull()
-        allinfo.loc[:, 'RMP_Deep'] = allinfo.loc[:, 'RMP_MO_Deep'].notnull()
-
-        print(allinfo.loc[:, 'RMP_MO_Shallow'].unique())
+        # allinfo.loc[:, 'RMP_MO_Deep'] = allinfo.loc[:, 'RMP_MO_Deep'].apply(lambda x: pd.to_numeric(x, errors='coerce'))
+        # allinfo.loc[:, 'RMP_MO_Shallow'] = allinfo.loc[:, 'RMP_MO_Shallow'].apply(
+        #     lambda x: pd.to_numeric(x, errors='coerce'))
+        # # allinfo = allinfo.astype({"RMP_MO_Deep":np.float64, "RMP_MO_Shallow":np.float64}, errors = 'ignore')
+        # allinfo.loc[:, 'RMP_Shallow'] = allinfo.loc[:, 'RMP_MO_Shallow'].notnull()
+        # allinfo.loc[:, 'RMP_Deep'] = allinfo.loc[:, 'RMP_MO_Deep'].notnull()
+        #
+        # print(allinfo.loc[:, 'RMP_MO_Shallow'].unique())
 
         allinfo = allinfo.rename(columns={'station_name': 'Station Name'})
         allinfo.index = allinfo.loc[:, 'Station Name']
@@ -95,43 +130,68 @@ def get_allstation():
 
     return allinfo
 
+
 def get_man():
-    if os.path.exists('manmeas.pickle'):
-        print('loading manmeas from pickle')
-        man = pd.read_pickle('manmeas.pickle')
-    else:
-        print('loading manmeas from wiski_census')
-        man = wiski_census.get_manual_measurements()
-        man.loc[:, 'yearmin'] = pd.to_datetime(man.loc[:, 'from']).dt.year
-        man.loc[:, 'yearmax'] = pd.to_datetime(man.loc[:, 'to']).dt.year
-        man.to_pickle('manmeas.pickle')
+
+    print('loading manmeas from pickle')
+    man = pd.read_pickle('allinfo.pickle')
+    man.loc[:, 'LastManMeas'] = pd.to_datetime(man.loc[:, 'LastManMeas'], errors='coerce')
+    man = man.loc[man.LastManMeas.notnull()]
+    print(man.dtypes)
+
+    # man.loc[:, 'yearmin'] = pd.to_datetime(man.loc[:, 'from']).dt.year
+    man.loc[:, 'yearmax'] = pd.to_datetime(man.loc[:, 'LastManMeas']).dt.year
+    man = get_meas_date_info(man, 'LastManMeas')
+    man.to_pickle('manmeas.pickle')
     return man
 
+
 def get_press():
-    if os.path.exists('press.pickle'):
-        print('loading press from pickle')
-        press = pd.read_pickle('press.pickle')
-    else:
-        print('loading get_recent_measurements from wiski_census')
-        press = wiski_census.get_recent_measurements()
-        press.loc[:, 'yearmin'] = pd.to_datetime(press.loc[:, 'from']).dt.year
-        press.loc[:, 'yearmax'] = pd.to_datetime(press.loc[:, 'to']).dt.year
-        press.to_pickle('press.pickle')
+    print('loading manmeas from pickle')
+    press = pd.read_pickle('allinfo.pickle')
+    press.loc[:, 'LastPressMeas'] = pd.to_datetime(press.loc[:, 'LastPressMeas'], errors='coerce')
+    press = press.loc[press.LastPressMeas.notnull()]
+
+    # man.loc[:, 'yearmin'] = pd.to_datetime(man.loc[:, 'from']).dt.year
+    press.loc[:, 'yearmax'] = pd.to_datetime(press.loc[:, 'LastPressMeas']).dt.year
+    press = get_meas_date_info(press, 'LastPressMeas')
+    press.to_pickle('press.pickle')
     return press
 
 
+def get_meas_date_info(raw, column = "LastManMeas"):
+    # re-label
+    print(raw.dtypes)
+    print(raw.head())
+
+    raw.loc[:, 'date'] = pd.to_datetime(raw.loc[:, column], errors='coerce')
+
+    raw.loc[:, "Elapsed Time"] = (datetime.datetime.now() - raw.loc[:, 'date']).dt.days / 365
+    raw.loc[:, "Elapsed Time"] = np.round(raw.loc[:, "Elapsed Time"], 1)
+    raw.loc[:, "Number of Months Since Last Measurement"] = (
+                (datetime.datetime.now() - raw.loc[:, 'date']).dt.days / 30)
+    raw.loc[:, "Number of Months Since Last Measurement"] = np.round(
+        raw.loc[:, "Number of Months Since Last Measurement"], 1)
+    raw.loc[:, 'Last Measurement'] = raw.loc[:, 'date'].dt.strftime("%b-%Y")
+    # raw.loc[:, 'First Measurement'] = raw.loc[:, 'from'].dt.strftime("%b-%Y")
+
+    return raw
+
+
 ## load for first time
-allinfo = get_allstation()
+allinfo = get_allstation_via_station_char(reload_from_wiski = True)
 ts = get_ts()
 man = get_man()
 press = get_press()
 
+print(allinfo.head())
+
 # delete files to make it re-load
 def remove():
-    os.remove('ts.pickle')
-    os.remove('manmeas.pickle')
-    os.remove('allinfo.pickle')
-    os.remove('press.pickle')
+    # os.remove('ts.pickle')
+    # os.remove('manmeas.pickle')
+    # os.remove('allinfo.pickle')
+    # os.remove('press.pickle')
     print('done removing files')
 
 
@@ -174,6 +234,24 @@ app.layout = html.Div([
             ),], style={'width' : '20%', 'display': 'inline-block'}),
 
             html.Div([
+                html.H5("Monitoring Agency"),
+
+                dcc.Checklist(
+                    id="monagency",
+                    options=[
+                        {"label": "Sonoma County Water Agency", "value": "Sonoma County Water Agency"},
+                        {"label": "Department of Water Resources", "value": "Department of Water Resources"},
+                        {"label": 'Sonoma Valley GSA', "value": 'Sonoma Valley GSA'},
+                        {"label": 'Petaluma Valley GSA', "value": 'Petaluma Valley GSA'},
+                        {"label": 'Santa Rosa Plain GSA', "value": 'Santa Rosa Plain GSA'},
+                        {"label": 'Sonoma Resource Conservation District', "value": 'Sonoma Resource Conservation District'},
+                        {"label": "All", "value": "All"},
+                    ],
+                    labelStyle={"display": "block"},
+                    value=["Sonoma County Water Agency"],
+                ), ], style={'width': '20%', 'display': 'inline-block'}),
+
+            html.Div([
             html.H5("Measurement Type"),
             dcc.Dropdown(
                 id="pressure",
@@ -187,13 +265,15 @@ app.layout = html.Div([
                 multi=False,
             ),], style={ 'width' : '20%', 'display': 'inline-block', 'verticalAlign':'top'}),
 
+
+
             html.Div([
             html.H5("Well Type"),
             dcc.Dropdown(
                 id="check_rmp",
                 options=[
-                    {"label": "RMP Shallow", "value": "RMP_shallow"},
-                    {"label": "RMP Deep", "value": "RMP_Deep"},
+                    {"label": "RMP", "value": "RMP"},
+                    # {"label": "RMP Deep", "value": "RMP_Deep"},
                     {"label": "Non-RMP", "value": "Non-RMP"},
                     {"label": "All", "value": "All"},
                 ],
@@ -245,7 +325,7 @@ def update_figure( n_clicks):
         raise PreventUpdate
     else:
         remove()
-        allinfo = get_allstation()
+        allinfo = get_allstation_via_station_char()
         ts = get_ts()
         man = get_man()
         press = get_press()
@@ -292,13 +372,14 @@ def update_figure(colorscale, n_clicks):
     [
         # Input('mapbox', 'selectedData'),
      Input('checkbox', 'value'),
+    Input('monagency', 'value'),
      # Input('depth-slider', 'value'),
      Input('check_rmp','value'),
      Input('pressure', 'value'),
     Input("show-map", "n_clicks"),
      ],
 )
-def update_figure( depth, RMP_type, pressure, clicks):  # Modify the function parameters
+def update_figure( depth, monAgency, RMP_type, pressure, clicks):  # Modify the function parameters
     print(clicks)
     ctx = dash.callback_context
     if ctx.triggered[0]["prop_id"].split(".")[0] != "show-map":
@@ -310,7 +391,7 @@ def update_figure( depth, RMP_type, pressure, clicks):  # Modify the function pa
         print('Allowing update')
 
 
-    allinfo = get_allstation()
+    # allinfo = get_allstation()
     man = get_man()
     press = get_press()
 
@@ -328,13 +409,28 @@ def update_figure( depth, RMP_type, pressure, clicks):  # Modify the function pa
     else:
         cdf = allinfo.query(f"Depth_Category=={depth}")
 
+    print(f"monAgency is of type {type(monAgency)}")
+    print(f"this is the monAgency variable {monAgency}")
+    if isinstance(monAgency, list):
+        if 'all' in [x.lower() for x in monAgency]:
+            cdf = cdf
+        else:
+            # cdf = allinfo.query(f"Depth_Category=={depth}")
+            # print(allinfo.Depth_Category.unique())
+            cdf = cdf.loc[cdf.MonAgency.isin(monAgency)]
+
+    elif 'all' == monAgency.lower():
+        cdf = cdf
+    else:
+        cdf = cdf.query(f"MonAgency=={monAgency}")
+
 
     print(f"pressure is of type {type(pressure)}")
     print(f"this is the pressure variable {pressure}")
     if pressure.lower() == 'all':
         print('showing all')
         # Filter the data based on the year range
-        ts_file = ts.copy()
+        ts_file = allinfo.copy()
     elif pressure.lower() == 'man':
         print('showing manual')
         ts_file = man.copy()
@@ -342,7 +438,7 @@ def update_figure( depth, RMP_type, pressure, clicks):  # Modify the function pa
         print('showing pressure')
         ts_file = press.copy()
 
-    cdf = cdf.loc[cdf.loc[:,'Station Name'].isin(ts_file.loc[:,'station_name'])]
+    cdf = cdf.loc[cdf.loc[:,'Station Name'].isin(ts_file.loc[:,'Station Name'])]
     def convert_empty_strings_to_nan(data_frame, column_name):
         # Replace empty strings with NaN in the specified column
         data_frame[column_name] = data_frame[column_name].replace('', np.nan)
@@ -357,50 +453,58 @@ def update_figure( depth, RMP_type, pressure, clicks):  # Modify the function pa
 
     print(RMP_type)
     print(type(RMP_type))
-    if   RMP_type == "RMP_shallow":
-        cdf = cdf.loc[cdf.loc[:,'RMP_Shallow']]
+    if RMP_type == "RMP":
+        cdf = cdf.loc[cdf.loc[:,'MonRMP']]
 
-    elif RMP_type == "RMP_Deep":
-        cdf = cdf.loc[cdf.loc[:, 'RMP_Deep']]
     elif RMP_type == "Non-RMP":
         print('sel non')
         # print(f"shape {cdf.shape}")
-        cdf = cdf.loc[~cdf.loc[:, ['RMP_Shallow','RMP_Shallow']].any(axis = 1)]
+        print(cdf.MonRMP.unique())
+        cdf =  cdf.loc[cdf.loc[:,'MonRMP']==False]
         # print(f"shape {cdf.shape}")
 
     # cdf.loc[cdf.loc[:, 'Station Name'].isin(ts_file.loc[:, 'station_name'])]
 
-
-
+    print(cdf.loc[:,['station_latitude','station_longitude']].describe())
+    #
+    marker_size = 5
     try:
         if pressure.lower() == 'all':
+            print('makng simple map\n'*5)
+            cdf = cdf.loc[cdf.station_latitude.notnull()]
+            cdf.loc[:,'size'] = marker_size
             fig = px.scatter_mapbox(cdf,
                                     lat="station_latitude",
                                     lon="station_longitude",
                                     hover_name="Station Name",
                                     color='Depth_Category',
+                                    size = 'size'
                                     )
         else:
-            cur = ts_file.loc[ts_file.loc[:, 'station_name'].isin(cdf.loc[:, 'Station Name'])]
+            print(f"shape of ts_file is {ts_file.shape}")
+            cur = ts_file.loc[ts_file.loc[:, 'Station Name'].isin(cdf.loc[:, 'Station Name'])]
+            print(cur.loc[:, ['station_latitude', 'station_longitude']].describe())
+            # cdf = pd.merge(cur, cdf.reset_index(drop = True), left_on= 'Station Name', right_on = "Station Name")
+            #
+            # cdf.loc[:,"Elapsed Time Min"] = cdf.loc[:, "Elapsed Time"].copy()
+            # cdf.loc[cdf.loc[:,"Elapsed Time Min"]<3, "Elapsed Time Min"] = 3
+            # print(cdf.loc[:,"Elapsed Time"].min())
+            print(cur.head().station_longitude.values)
+            cur.loc[:, 'size'] = marker_size
 
-            cdf = pd.merge(cur, cdf.reset_index(drop = True), left_on= 'station_name', right_on = "Station Name")
-
-            cdf.loc[:,"Elapsed Time Min"] = cdf.loc[:, "Elapsed Time"].copy()
-            cdf.loc[cdf.loc[:,"Elapsed Time Min"]<3, "Elapsed Time Min"] = 3
-            print(cdf.loc[:,"Elapsed Time"].min())
-
-
-            fig = px.scatter_mapbox(cdf,  lat="station_latitude",
-                                    lon="station_longitude", hover_name="station_name",
+            fig = px.scatter_mapbox(cur,  lat="station_latitude",
+                                    lon="station_longitude",
+                                    hover_name="Station Name",
                                 # hover_data=["Elapsed Time",'station_no'],
-                                    color="Elapsed Time",
-                                    size = "Elapsed Time Min",
-                                    size_max= 15,
+                                    color= 'Number of Months Since Last Measurement',
+                                    # size =  'Number of Months Since Last Measurement',
+                                    # size_max= 15,
+                                    size = 'size',
                                     hover_data={"Elapsed Time": True,
                                                 'station_no': True,
                                                 "station_latitude": False,
                                                 "station_longitude": False,
-                                                "Elapsed Time Min": False},
+                                                'Number of Months Since Last Measurement': False},
                                      )
 
             if cdf.shape[1]>10:
