@@ -95,6 +95,8 @@ def get_gw_mon_status(station):
         x.loc[:, c] = x.loc[:, c].fillna(False)
         x.loc[:, c] = x.loc[:, c].replace({'yes': True, 'no': False})
 
+    x.loc[:,'MonSGMASiteCode'] = x.loc[:,'MonSGMASiteCode'].fillna('')
+
     return x
 
 
@@ -222,28 +224,9 @@ app.layout = html.Div([
 
 
         html.Div([
-            html.Div([
-            html.H5("Well Depth"),
-
-            dcc.Checklist(
-                id="checkbox",
-                options=[
-                    {"label": "Shallow", "value": "Shallow (0-200ft)"},
-                    {"label": "Medium", "value": "Medium (200-500ft)"},
-                    {"label": "Deep", "value": "Deep(>500ft)"},
-                    {"label": "Unknown", "value": "Other"},
-                    {"label": "All", "value": "All"},
-                ],
-                labelStyle={"display": "block"},
-                value=["Shallow (0-200ft)", "Medium (200-500ft)", "Deep(>500ft)"],
-            ),], style={'width' : '20%', 'display': 'inline-block'}),
 
             html.Div([
                 html.H5("Monitoring Agency"),
-
-
-
-
                 dcc.Checklist(
                     id="monagency",
                     options=[
@@ -276,7 +259,7 @@ app.layout = html.Div([
             ),
 
                 html.Div([
-                    html.H5("Well Type"),
+                    html.H5("RMP"),
                     dcc.Dropdown(
                         id="check_rmp",
                         options=[
@@ -327,6 +310,20 @@ app.layout = html.Div([
 
             ], style={'width': '20%', 'display': 'inline-block', 'verticalAlign': 'top'}),
 
+            html.Div([
+                html.H5("Well Depth"),
+                dcc.Checklist(
+                    id="checkbox",
+                    options=[
+                        {"label": "Shallow", "value": "Shallow (0-200ft)"},
+                        {"label": "Medium", "value": "Medium (200-500ft)"},
+                        {"label": "Deep", "value": "Deep(>500ft)"},
+                        {"label": "Unknown", "value": "Other"},
+                        {"label": "All", "value": "All"},
+                    ],
+                    labelStyle={"display": "block"},
+                    value=["Shallow (0-200ft)", "Medium (200-500ft)", "Deep(>500ft)"],
+                ), ], style={'width': '20%', 'display': 'inline-block', 'verticalAlign': 'top'}),
 
             # html.Div([
             # html.H5("Well Type"),
@@ -364,14 +361,17 @@ app.layout = html.Div([
         style={'width': '20%', 'display': 'inline-block', }),
     html.Div(id='my-output'),
 
-    html.Div([
+
+
+    dcc.Graph(id='graph'),
+
+    html.Div([    html.Div([
         html.Button("Download Data", id="download-data", n_clicks=0), ],
         style={'width': '20%', 'display': 'inline-block'}),
     dcc.Download(id="download-link"),],
-
-        style = {'width': '100%', 'display': 'inline-block', }),
-
-    dcc.Graph(id='graph'),
+        style = {'width': '100%', 'display': 'inline-block', }
+    ),
+    ])
 ])
 
 
@@ -434,15 +434,14 @@ def update_figure(colorscale, n_clicks):
     Output('mapbox', 'figure'),
     [
         # Input('mapbox', 'selectedData'),
-     Input('checkbox', 'value'),
-    Input('monagency', 'value'),
-     # Input('depth-slider', 'value'),
-     Input('check_rmp','value'),
+        Input('checkbox', 'value'),
+        Input('monagency', 'value'),
+        # Input('depth-slider', 'value'),
+        Input('check_rmp','value'),
         Input('activemon', 'value'),
-Input('MonSGMA', 'value'),
-
-     Input('pressure', 'value'),
-    Input("show-map", "n_clicks"),
+        Input('MonSGMA', 'value'),
+        Input('pressure', 'value'),
+        Input("show-map", "n_clicks"),
      ],
 )
 def update_figure( depth, monAgency, RMP_type, activemon, MonSGMA, pressure, clicks):  # Modify the function parameters
@@ -544,7 +543,7 @@ def update_figure( depth, monAgency, RMP_type, activemon, MonSGMA, pressure, cli
 
     print(cdf.loc[:,['station_latitude','station_longitude']].describe())
     #
-    marker_size = 5
+    marker_size = 2
     try:
         if pressure.lower() == 'all':
             print('makng simple map\n'*5)
@@ -557,11 +556,16 @@ def update_figure( depth, monAgency, RMP_type, activemon, MonSGMA, pressure, cli
                                     color='Depth_Category',
                                     size = 'size',
 
-                                hover_data = {
-                                              'station_no': True,
-
-
-                                             },
+                                    hover_data={
+                                        # "Elapsed Time": False,
+                                                'station_no': True,
+                                                "station_latitude": False,
+                                                "station_longitude": False,
+                                                "MonAgency":True,
+                                                "size": False,
+                                                "MonSGMASiteCode":True,
+                                                # 'Number of Months Since Last Measurement': False
+                                    },
             )
 
         else:
@@ -588,7 +592,9 @@ def update_figure( depth, monAgency, RMP_type, activemon, MonSGMA, pressure, cli
                                                 'station_no': True,
                                                 "station_latitude": False,
                                                 "station_longitude": False,
-                                                'Number of Months Since Last Measurement': False},
+                                                "MonSGMASiteCode": True,
+                                                "MonAgency": True,
+                                                'Number of Months Since Last Measurement': True},
                                      )
 
             if cdf.shape[1]>10:
