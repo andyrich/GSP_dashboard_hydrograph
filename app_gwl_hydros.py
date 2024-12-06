@@ -605,13 +605,36 @@ def update_figure( depth, monAgency, RMP_type, activemon, MonSGMA, pressure, cli
 
             cdf.to_pickle('cur_selection.pickle')
 
+        # Add mapbox style and enable scroll zoom
+        fig.update_layout(
+            mapbox_style="open-street-map",  # Example map style, you can change it
+            mapbox_zoom=10,  # Adjust initial zoom level
+            clickmode="event+select",
+            mapbox_center={"lat": cdf['station_latitude'].mean(), "lon": cdf['station_longitude'].mean()},
+        )
+
+        fig.update_layout(
+            dragmode="pan",  # Enables panning
+            margin={"r": 0, "t": 0, "l": 0, "b": 0},  # Remove margins for better view
+            legend=dict(
+                x=0.05,  # Position on the x-axis (0 to 1)
+                y=0.95,  # Position on the y-axis (0 to 1)
+                bgcolor="rgba(255,255,255,0.7)",  # Background color with transparency
+                bordercolor="black",  # Border color
+                borderwidth=1  # Border width
+            ),
+
+        )
+        #
+        # # Update layout to move the legend
+        # fig.update_layout(
+        #
+        #     margin={"r": 0, "t": 0, "l": 0, "b": 0}  # Remove margins for better fit
+        # )
+        # # Enable scroll zoom explicitly
+        # fig.show(config={'scrollZoom': True})
 
 
-        fig.update_layout(mapbox_style="open-street-map")
-        # fig.update_geos(fitbounds="locations")
-        fig.update_layout(clickmode="event+select")
-        config = {'scrollZoom': True}
-        fig.show(config=config)
 
         print('the map figure does work')
     except Exception as e:
