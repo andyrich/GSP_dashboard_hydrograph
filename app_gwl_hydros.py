@@ -610,6 +610,8 @@ def update_figure( depth, monAgency, RMP_type, activemon, MonSGMA, pressure, cli
         fig.update_layout(mapbox_style="open-street-map")
         # fig.update_geos(fitbounds="locations")
         fig.update_layout(clickmode="event+select")
+        config = {'scrollZoom': True}
+        fig.show(config=config)
 
         print('the map figure does work')
     except Exception as e:
