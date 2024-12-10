@@ -15,7 +15,7 @@ import dash.html as html
 import pandas as pd
 import numpy as np
 
-import wiski_census
+import wiski_data_plot_multi
 import wiski_data
 import helper
 # dash.register_page(__name__, path='/')
@@ -388,7 +388,7 @@ def update_figure( n_clicks):
         raise PreventUpdate
     else:
         remove()
-        allinfo = get_allstation_via_station_char()
+        allinfo = get_allstation_via_station_char(reload_from_wiski=True)
         ts = get_ts()
         man = get_man()
         press = get_press()
@@ -415,17 +415,26 @@ def update_figure(colorscale, n_clicks):
         dfi = pd.DataFrame(columns=["Timestamp", "Manual Measurement", 'name'])
         colorscale = "Son0001"
     else:
-        colorscale = colorscale['points'][0]['hovertext']
-        # print(colorscale)
+        print('ff'*30)
+        print(colorscale)
+        colorscale  = [i['hovertext'] for i in colorscale['points']]
+        print(colorscale)
 
-        # dfi = df_meas.query(f"station_name=='{colorscale}'")
-    #
-    title = f"{colorscale}"
-    print(f"the name of the station is {title}")
-    x =wiski_data.wiski_plot(colorscale)
+    if len(colorscale)==1:
+        colorscale = colorscale[0]
+        title = f"{colorscale}"
+        print(f"the name of the station is {title}")
+        x =wiski_data.wiski_plot(colorscale)
 
-    x.get_station_pars(remove_pt=False)
-    fig = x.plot_gw()
+        x.get_station_pars(remove_pt=False)
+        fig = x.plot_gw()
+
+    else:
+        print('plotting many'*50)
+        # asdfasdf
+        x = wiski_data_plot_multi.wiski_plot(colorscale)
+
+        fig = x.plot_multi()
 
     return fig
 
