@@ -3,7 +3,6 @@ import os
 from plotly.tools import mpl_to_plotly
 import plotly.express as px
 from dash.dependencies import Input, Output
-from dash import dash_table as dt
 import plotly.graph_objects as go
 from dash.exceptions import PreventUpdate
 from dash import callback
@@ -18,6 +17,7 @@ import numpy as np
 import wiski_data_plot_multi
 import wiski_data
 import helper
+
 # dash.register_page(__name__, path='/')
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -25,6 +25,9 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 server = app.server
 
+# Create the range of months and labels for slider
+months = list(range(1, 19))
+labels = [str(m) if m in [1, 2, 4, 6, 12, 18] else '' for m in months]
 # df_meas = pd.read_csv(os.path.join('obs_data_for_website.csv'))
 # df_meas.loc[:, 'Timestamp'] = pd.to_datetime(df_meas.loc[:, 'Timestamp'])
 
@@ -32,30 +35,32 @@ k = helper.get_kiwis()
 # pars = k.get_parameter_list(parametertype_name = "Groundw*", return_fields = ['station_name'])
 print('getting timeseries')
 
+
 def get_ts():
     if os.path.exists('ts.pickle'):
         print('loading ts pickle')
         ts = pd.read_pickle('ts.pickle')
     else:
         print('loading ts from wiski')
-        ts = pd.concat([k.get_timeseries_list(station_name = 'SRP*',
-                        parametertype_name = "Groundw*",
-                        return_fields = ['station_name', 'coverage','stationparameter_name']),
+        ts = pd.concat([k.get_timeseries_list(station_name='SRP*',
+                                              parametertype_name="Groundw*",
+                                              return_fields=['station_name', 'coverage', 'stationparameter_name']),
 
-                        k.get_timeseries_list(station_name = 'Son*',
-                        parametertype_name = "Groundw*",
-                        return_fields = ['station_name', 'coverage','stationparameter_name']),
+                        k.get_timeseries_list(station_name='Son*',
+                                              parametertype_name="Groundw*",
+                                              return_fields=['station_name', 'coverage', 'stationparameter_name']),
 
-                        k.get_timeseries_list(station_name = 'PET*',
-                        parametertype_name = "Groundw*",
-                        return_fields = ['station_name', 'coverage','stationparameter_name']),
+                        k.get_timeseries_list(station_name='PET*',
+                                              parametertype_name="Groundw*",
+                                              return_fields=['station_name', 'coverage', 'stationparameter_name']),
 
-                        k.get_timeseries_list(station_name = 'LRR*',
-                        parametertype_name = "Groundw*",
-                        return_fields = ['station_name', 'coverage','stationparameter_name'])])
+                        k.get_timeseries_list(station_name='LRR*',
+                                              parametertype_name="Groundw*",
+                                              return_fields=['station_name', 'coverage', 'stationparameter_name'])])
 
         ts.to_pickle('ts.pickle')
     return ts
+
 
 def get_gw_mon_status(station):
     '''
@@ -67,27 +72,27 @@ def get_gw_mon_status(station):
     Returns: df with station name, location, object type and fields listed above.
     '''
 
-
     ur1 = r'https://www2.kisters.net/sonomacountygroundwater/KiWIS/KiWIS?service=kisters&type=queryServices&request=getStationList&datasource=0&format=html&station_name='
     ur2 = r'&returnfields=station_name,station_no,site_name,station_latitude,station_longitude,object_type,ca_sta&ca_sta_returnfields='
     ur3 = r'Subbasin_Name,site_no,'
-    ur4 = 'OwnerMon, MonSiteFreq, MonSGMASiteCode, MonSGMA, MonRMP, MonCASGEM, MonAgency, LastPressMeas, LastManMeas, ActivPress, ActiveMon,Depth_Category'.replace(' ','')
-    url_send = ur1 + station + ur2 + ur3+ur4
+    ur4 = 'OwnerMon, MonSiteFreq, MonSGMASiteCode, MonSGMA, MonRMP, MonCASGEM, MonAgency, LastPressMeas, LastManMeas, ActivPress, ActiveMon,Depth_Category'.replace(
+        ' ', '')
+    url_send = ur1 + station + ur2 + ur3 + ur4
     content = helper.wiski_request_ssl(url_send)
     x = pd.read_html(content, header=0)
     x = x[0]
-    x = x.loc[x.object_type.str.lower().str.contains('gw monitoring', na = False)]
+    x = x.loc[x.object_type.str.lower().str.contains('gw monitoring', na=False)]
     x = x.dropna(subset='station_name')
     # raw[column] = pd.to_datetime(raw[column], errors='coerce')  # Ensures proper datetime conversion
-    x.loc[:,'LastManMeas'] = pd.to_datetime(x.loc[:,'LastManMeas'], errors='coerce')
+    x.loc[:, 'LastManMeas'] = pd.to_datetime(x.loc[:, 'LastManMeas'], errors='coerce')
     x.loc[:, 'LastPressMeas'] = pd.to_datetime(x.loc[:, 'LastPressMeas'], errors='coerce')
 
-    x.loc[:,'Depth_Category'] = x.loc[:,'Depth_Category'].fillna('Other')
+    x.loc[:, 'Depth_Category'] = x.loc[:, 'Depth_Category'].fillna('Other')
 
-    x.loc[x.loc[:,'Depth_Category'].str.contains('Deep'),'Depth_Category'] = "Deep(>500ft)"
+    x.loc[x.loc[:, 'Depth_Category'].str.contains('Deep'), 'Depth_Category'] = "Deep(>500ft)"
 
     x = x.astype({'LastPressMeas': 'datetime64[ns]',
-                      'LastPressMeas': 'datetime64[ns]'})
+                  'LastPressMeas': 'datetime64[ns]'})
 
     rep = "MonSGMA 	MonRMP 	MonCASGEM 	  	ActivPress 	ActiveMon".split()
 
@@ -95,13 +100,12 @@ def get_gw_mon_status(station):
         x.loc[:, c] = x.loc[:, c].fillna(False)
         x.loc[:, c] = x.loc[:, c].replace({'yes': True, 'no': False})
 
-    x.loc[:,'MonSGMASiteCode'] = x.loc[:,'MonSGMASiteCode'].fillna('')
+    x.loc[:, 'MonSGMASiteCode'] = x.loc[:, 'MonSGMASiteCode'].fillna('')
 
     return x
 
 
-
-def get_allstation_via_station_char(reload_from_wiski = False):
+def get_allstation_via_station_char(reload_from_wiski=False):
     if (not reload_from_wiski) and os.path.exists('allinfo.pickle'):
         print('loading allinfo from pickle')
         allinfo = pd.read_pickle('allinfo.pickle')
@@ -115,8 +119,7 @@ def get_allstation_via_station_char(reload_from_wiski = False):
                 get_gw_mon_status('PET*'),
                 get_gw_mon_status('LRR*'),
 
-
-        ]
+            ]
         )
         # print(allinfo.head())
         # print(allinfo.MonAgency.unique())
@@ -133,13 +136,14 @@ def get_allstation_via_station_char(reload_from_wiski = False):
         allinfo = allinfo.rename(columns={'station_name': 'Station Name'})
         allinfo.index = allinfo.loc[:, 'Station Name']
 
+        allinfo = get_any_meas_date_info(allinfo)
+
         allinfo.to_pickle("allinfo.pickle")
 
     return allinfo
 
 
 def get_man():
-
     print('loading manmeas from pickle')
     man = pd.read_pickle('allinfo.pickle')
     man.loc[:, 'LastManMeas'] = pd.to_datetime(man.loc[:, 'LastManMeas'], errors='coerce')
@@ -166,7 +170,7 @@ def get_press():
     return press
 
 
-def get_meas_date_info(raw, column = "LastManMeas"):
+def get_meas_date_info(raw, column="LastManMeas"):
     # re-label
     # print(raw.dtypes)
     # print(raw.head())
@@ -176,7 +180,7 @@ def get_meas_date_info(raw, column = "LastManMeas"):
     raw.loc[:, "Elapsed Time"] = (datetime.datetime.now() - raw.loc[:, 'date']).dt.days / 365
     raw.loc[:, "Elapsed Time"] = np.round(raw.loc[:, "Elapsed Time"], 1)
     raw.loc[:, "Number of Months Since Last Measurement"] = (
-                (datetime.datetime.now() - raw.loc[:, 'date']).dt.days / 30)
+            (datetime.datetime.now() - raw.loc[:, 'date']).dt.days / 30)
     raw.loc[:, "Number of Months Since Last Measurement"] = np.round(
         raw.loc[:, "Number of Months Since Last Measurement"], 1)
     raw.loc[:, 'Last Measurement'] = raw.loc[:, 'date'].dt.strftime("%b-%Y")
@@ -184,14 +188,35 @@ def get_meas_date_info(raw, column = "LastManMeas"):
 
     return raw
 
+def get_any_meas_date_info(raw):
+    # re-label
+    # print(raw.dtypes)
+    # print(raw.head())
+
+    raw.loc[:, 'date1'] = pd.to_datetime(raw.loc[:, 'LastManMeas'], errors='coerce')
+    raw.loc[:, 'date2'] = pd.to_datetime(raw.loc[:, 'LastPressMeas'], errors='coerce')
+
+    raw.loc[:, "et1"] = (datetime.datetime.now() - raw.loc[:, 'date1']).dt.days / 30
+    raw.loc[:, "et2"] = (datetime.datetime.now() - raw.loc[:, 'date2']).dt.days / 30
+
+    raw.loc[:,'Last Measurement'] = raw.loc[:,['et1','et2']].min(axis=1)
+
+    raw.loc[:, "Last Measurement"] = np.round(
+        raw.loc[:, "Last Measurement"], 1)
+
+    raw = raw.drop(columns = ['date1','date2','et1', 'et2'])
+
+    return raw
+
 
 ## load for first time
-allinfo = get_allstation_via_station_char(reload_from_wiski = True)
+allinfo = get_allstation_via_station_char(reload_from_wiski=True)
 ts = get_ts()
 man = get_man()
 press = get_press()
 
 print(allinfo.head())
+
 
 # delete files to make it re-load
 def remove():
@@ -203,18 +228,18 @@ def remove():
 
 
 def get_loc(name):
-    loci = allinfo[allinfo.loc[:, 'Station Name'] == name].loc[:, ['Station Name','station_latitude','station_longitude']]
+    loci = allinfo[allinfo.loc[:, 'Station Name'] == name].loc[:,
+           ['Station Name', 'station_latitude', 'station_longitude']]
 
     return [[loci.at[name, 'station_latitude']], [loci.at[name, 'station_longitude']]]
 
 
 all_options = {
-    'Santa Rosa Plain': sorted(allinfo.query("site_no=='SRP'").loc[:,'Station Name'].unique()),
-    'Sonoma Valley': sorted(allinfo.query("site_no=='Son'").loc[:,'Station Name'].unique()),
-    'Petaluma Valley': sorted(allinfo.query("site_no=='PET'").loc[:,'Station Name'].unique()),
-    'Lower Russian River': sorted(allinfo.query("site_no=='LRR'").loc[:,'Station Name'].unique())
+    'Santa Rosa Plain': sorted(allinfo.query("site_no=='SRP'").loc[:, 'Station Name'].unique()),
+    'Sonoma Valley': sorted(allinfo.query("site_no=='Son'").loc[:, 'Station Name'].unique()),
+    'Petaluma Valley': sorted(allinfo.query("site_no=='PET'").loc[:, 'Station Name'].unique()),
+    'Lower Russian River': sorted(allinfo.query("site_no=='LRR'").loc[:, 'Station Name'].unique())
 }
-
 
 app.layout = html.Div([
     html.H3("Waterlevel Hydrographs"),
@@ -222,29 +247,29 @@ app.layout = html.Div([
         dcc.Graph(id='mapbox', style={'width': '100%', 'height': '100vh'}),
     ], style={'width': '100%', 'display': 'inline-block'}),
 
+    html.Div([
 
         html.Div([
+            html.H5("Monitoring Agency"),
+            dcc.Checklist(
+                id="monagency",
+                options=[
+                    {"label": "Sonoma County Water Agency", "value": "Sonoma County Water Agency"},
+                    {"label": "Department of Water Resources", "value": "Department of Water Resources"},
+                    {"label": 'Sonoma Valley GSA', "value": 'Sonoma Valley GSA'},
+                    {"label": 'Petaluma Valley GSA', "value": 'Petaluma Valley GSA'},
+                    {"label": 'Santa Rosa Plain GSA', "value": 'Santa Rosa Plain GSA'},
+                    {"label": 'Sonoma Resource Conservation District',
+                     "value": 'Sonoma Resource Conservation District'},
+                    {"label": 'Sonoma County PRMD', "value": 'Sonoma County PRMD'},
+                    {"label": 'City of Petaluma', "value": 'City of Petaluma Public Works and Utilities Department'},
+                    {"label": "All", "value": "All"},
+                ],
+                labelStyle={"display": "block"},
+                value=["Sonoma County Water Agency"],
+            ), ], style={'width': '20%', 'display': 'inline-block'}),
 
-            html.Div([
-                html.H5("Monitoring Agency"),
-                dcc.Checklist(
-                    id="monagency",
-                    options=[
-                        {"label": "Sonoma County Water Agency", "value": "Sonoma County Water Agency"},
-                        {"label": "Department of Water Resources", "value": "Department of Water Resources"},
-                        {"label": 'Sonoma Valley GSA', "value": 'Sonoma Valley GSA'},
-                        {"label": 'Petaluma Valley GSA', "value": 'Petaluma Valley GSA'},
-                        {"label": 'Santa Rosa Plain GSA', "value": 'Santa Rosa Plain GSA'},
-                        {"label": 'Sonoma Resource Conservation District', "value": 'Sonoma Resource Conservation District'},
-                        {"label": 'Sonoma County PRMD', "value": 'Sonoma County PRMD'},
-                        {"label": 'City of Petaluma', "value": 'City of Petaluma Public Works and Utilities Department'},
-                        {"label": "All", "value": "All"},
-                    ],
-                    labelStyle={"display": "block"},
-                    value=["Sonoma County Water Agency"],
-                ), ], style={'width': '20%', 'display': 'inline-block'}),
-
-            html.Div([
+        html.Div([
             html.H5("Measurement Type"),
             dcc.RadioItems(
                 id="pressure",
@@ -258,122 +283,116 @@ app.layout = html.Div([
                 # multi=False,
             ),
 
-                html.Div([
-                    html.H5("RMP"),
-                    dcc.Dropdown(
-                        id="check_rmp",
-                        options=[
-                            {"label": "RMP", "value": "RMP"},
-                            # {"label": "RMP Deep", "value": "RMP_Deep"},
-                            {"label": "Non-RMP", "value": "Non-RMP"},
-                            {"label": "All", "value": "All"},
-                        ],
-
-                        value="All",
-                        multi=False,
-                    ),
-                ],
-                    # style={ 'width' : '20%','display': 'inline-block', 'verticalAlign':'top'},
-                    # labelStyle={"display": "block"},
-                )
-
-            ], style={ 'width' : '20%', 'display': 'inline-block', 'verticalAlign':'top'}),
-
             html.Div([
-                html.H5("Actively Monitored"),
-
-                dcc.RadioItems(
-                    id="activemon",
+                html.H5("RMP"),
+                dcc.Dropdown(
+                    id="check_rmp",
                     options=[
-                        {"label": "Actively Monitored", "value": 'active'},
-                        {"label": "Not Actively Monitored", "value": 'inactive'},
-                        {"label": "All", "value": "all"},
-                    ],
-                    # labelStyle={"display": "block"},
-                    value="active",
-                    # multi=False,
-                ),
-
-                html.H5("SGMA Well"),
-                dcc.RadioItems(
-                    id="MonSGMA",
-                    options=[
-                        {"label": "SGMA", "value": 'sgma'},
-                        {"label": "Not SGMA", "value": 'nonsgmaa'},
-                        {"label": "All", "value": "all"},
-                    ],
-                    # labelStyle={"display": "block"},
-                    value="all",
-                    # multi=False,
-                ),
-
-
-            ], style={'width': '20%', 'display': 'inline-block', 'verticalAlign': 'top'}),
-
-            html.Div([
-                html.H5("Well Depth"),
-                dcc.Checklist(
-                    id="checkbox",
-                    options=[
-                        {"label": "Shallow", "value": "Shallow (0-200ft)"},
-                        {"label": "Medium", "value": "Medium (200-500ft)"},
-                        {"label": "Deep", "value": "Deep(>500ft)"},
-                        {"label": "Unknown", "value": "Other"},
+                        {"label": "RMP", "value": "RMP"},
+                        # {"label": "RMP Deep", "value": "RMP_Deep"},
+                        {"label": "Non-RMP", "value": "Non-RMP"},
                         {"label": "All", "value": "All"},
                     ],
-                    labelStyle={"display": "block"},
-                    value=["Shallow (0-200ft)", "Medium (200-500ft)", "Deep(>500ft)"],
-                ), ], style={'width': '20%', 'display': 'inline-block', 'verticalAlign': 'top'}),
 
-            # html.Div([
-            # html.H5("Well Type"),
-            # dcc.Dropdown(
-            #     id="check_rmp",
-            #     options=[
-            #         {"label": "RMP", "value": "RMP"},
-            #         # {"label": "RMP Deep", "value": "RMP_Deep"},
-            #         {"label": "Non-RMP", "value": "Non-RMP"},
-            #         {"label": "All", "value": "All"},
-            #     ],
-            #
-            #     value="All",
-            #     multi=False,
-            # ),
-            # ],
-            #     # style={ 'width' : '20%','display': 'inline-block', 'verticalAlign':'top'},
-            #     # labelStyle={"display": "block"},
-            # )
-        ],
-            style={'width': '100%', 'display': 'inline-block', 'verticalAlign':'top'}),
+                    value="All",
+                    multi=False,
+                ),
+            ],
+                # style={ 'width' : '20%','display': 'inline-block', 'verticalAlign':'top'},
+                # labelStyle={"display": "block"},
+            )
 
+        ], style={'width': '20%', 'display': 'inline-block', 'verticalAlign': 'top'}),
+
+        html.Div([
+            html.H5("Actively Monitored"),
+
+            dcc.RadioItems(
+                id="activemon",
+                options=[
+                    {"label": "Actively Monitored", "value": 'active'},
+                    {"label": "Not Actively Monitored", "value": 'inactive'},
+                    {"label": "All", "value": "all"},
+                ],
+                # labelStyle={"display": "block"},
+                value="active",
+                # multi=False,
+            ),
+
+            html.H5("SGMA Well"),
+            dcc.RadioItems(
+                id="MonSGMA",
+                options=[
+                    {"label": "SGMA", "value": 'sgma'},
+                    {"label": "Not SGMA", "value": 'nonsgmaa'},
+                    {"label": "All", "value": "all"},
+                ],
+                # labelStyle={"display": "block"},
+                value="all",
+                # multi=False,
+            ),
+
+        ], style={'width': '20%', 'display': 'inline-block', 'verticalAlign': 'top'}),
+
+        html.Div([
+            html.H5("Well Depth"),
+            dcc.Checklist(
+                id="checkbox",
+                options=[
+                    {"label": "Shallow", "value": "Shallow (0-200ft)"},
+                    {"label": "Medium", "value": "Medium (200-500ft)"},
+                    {"label": "Deep", "value": "Deep(>500ft)"},
+                    {"label": "Unknown", "value": "Other"},
+                    {"label": "All", "value": "All"},
+                ],
+                labelStyle={"display": "block"},
+                value=["Shallow (0-200ft)", "Medium (200-500ft)", "Deep(>500ft)"],
+            ), ], style={'width': '20%', 'display': 'inline-block', 'verticalAlign': 'top'}),
+
+        html.Div([
+            html.H5("Number of Months Since Last Observation"),
+            dcc.Slider(
+                value =1,
+                min = 0,
+                max = 18,
+                marks = {m: f">{str(m)}m" if m in range(0,19,4) else '' for m in months},
+                tooltip={"always_visible": False},
+                # handleLabel={"showCurrentValue": True,"label": "Months"},
+                vertical=False,
+                # verticalHeight='100%',
+                id="slider",
+                # marks = ,
+                # labelStyle={"display": "block"},
+                # value=["Shallow (0-200ft)", "Medium (200-500ft)", "Deep(>500ft)"],
+            ), ], style={'width': '20%', 'display': 'inline-block', 'verticalAlign': 'top'}),
+
+    ],
+        style={'width': '100%', 'display': 'inline-block', 'verticalAlign': 'top'}),
 
     html.Hr(),
 
     html.Div([
-    html.Div([
-        html.Button("Update Map", id="show-map", n_clicks=0),],
-        style = {'width': '20%', 'display': 'inline-block', }),
-    html.Div([
-        html.Button("Show Hydrograph", id="show-image", n_clicks=0),],
-    style = {'width': '20%', 'display': 'inline-block', },),
-    html.Div([
-        html.Button("Update data", id="dataupdate", n_clicks=0), ],
-        style={'width': '20%', 'display': 'inline-block', }),
-    html.Div(id='my-output'),
+        html.Div([
+            html.Button("Update Map", id="show-map", n_clicks=0), ],
+            style={'width': '20%', 'display': 'inline-block', }),
+        html.Div([
+            html.Button("Show Hydrograph", id="show-image", n_clicks=0), ],
+            style={'width': '20%', 'display': 'inline-block', }, ),
+        html.Div([
+            html.Button("Update data", id="dataupdate", n_clicks=0), ],
+            style={'width': '20%', 'display': 'inline-block', }),
+        html.Div(id='my-output'),
 
+        dcc.Graph(id='graph'),
 
-
-    dcc.Graph(id='graph'),
-
-    html.Div([    html.Div([
-        html.Button("Download Data", id="download-data", n_clicks=0), ],
-        style={'width': '20%', 'display': 'inline-block'}),
-    dcc.Download(id="download-link"),],
-        style = {'width': '100%', 'display': 'inline-block', }
-    ),
+        html.Div([html.Div([
+            html.Button("Download Data", id="download-data", n_clicks=0), ],
+            style={'width': '20%', 'display': 'inline-block'}),
+            dcc.Download(id="download-link"), ],
+            style={'width': '100%', 'display': 'inline-block', }
+        ),
     ])
 ])
-
 
 
 @callback(
@@ -381,7 +400,7 @@ app.layout = html.Div([
     Input("dataupdate", "n_clicks"),
     prevent_initial_call=True,
 )
-def update_figure( n_clicks):
+def update_figure(n_clicks):
     ctx = dash.callback_context
     if ctx.triggered[0]["prop_id"].split(".")[0] != "dataupdate":
         # print('preventing update')
@@ -393,8 +412,8 @@ def update_figure( n_clicks):
         man = get_man()
         press = get_press()
 
-
     return "Done Re-Loading Data"
+
 
 @callback(
     # Output('display-selected-values', 'children'),
@@ -415,22 +434,22 @@ def update_figure(colorscale, n_clicks):
         dfi = pd.DataFrame(columns=["Timestamp", "Manual Measurement", 'name'])
         colorscale = "Son0001"
     else:
-        print('ff'*30)
+        print('ff' * 30)
         print(colorscale)
-        colorscale  = [i['hovertext'] for i in colorscale['points']]
+        colorscale = [i['hovertext'] for i in colorscale['points']]
         print(colorscale)
 
-    if len(colorscale)==1:
+    if len(colorscale) == 1:
         colorscale = colorscale[0]
         title = f"{colorscale}"
         print(f"the name of the station is {title}")
-        x =wiski_data.wiski_plot(colorscale)
+        x = wiski_data.wiski_plot(colorscale)
 
         x.get_station_pars(remove_pt=False)
         fig = x.plot_gw()
 
     else:
-        print('plotting many'*50)
+        print('plotting many' * 50)
         # asdfasdf
         x = wiski_data_plot_multi.wiski_plot(colorscale)
 
@@ -446,24 +465,25 @@ def update_figure(colorscale, n_clicks):
         Input('checkbox', 'value'),
         Input('monagency', 'value'),
         # Input('depth-slider', 'value'),
-        Input('check_rmp','value'),
+        Input('check_rmp', 'value'),
         Input('activemon', 'value'),
         Input('MonSGMA', 'value'),
         Input('pressure', 'value'),
         Input("show-map", "n_clicks"),
-     ],
+        Input("slider", "value"),
+    ],
 )
-def update_figure( depth, monAgency, RMP_type, activemon, MonSGMA, pressure, clicks):  # Modify the function parameters
+def update_figure(depth, monAgency, RMP_type, activemon, MonSGMA, pressure, clicks,
+                  nmonths):  # Modify the function parameters
     # print(clicks)
     ctx = dash.callback_context
     if ctx.triggered[0]["prop_id"].split(".")[0] != "show-map":
         print(ctx.triggered[0]["prop_id"])
         # print('preventing update')
-        raise PreventUpdate
+        # raise PreventUpdate
     else:
         print(ctx.triggered[0]["prop_id"])
         # print('Allowing update')
-
 
     # allinfo = get_allstation()
     man = get_man()
@@ -501,16 +521,15 @@ def update_figure( depth, monAgency, RMP_type, activemon, MonSGMA, pressure, cli
     print(f"activemon is of type {type(activemon)}")
     print(f"this is the activemon variable {activemon}")
 
-
     if 'all' == activemon.lower():
         cdf = cdf
     else:
-        cdf = cdf.loc[cdf.ActiveMon==(activemon=='active')]
+        cdf = cdf.loc[cdf.ActiveMon == (activemon == 'active')]
 
     if 'all' == MonSGMA.lower():
         cdf = cdf
     else:
-        cdf = cdf.loc[cdf.MonSGMA==(MonSGMA=='sgma')]
+        cdf = cdf.loc[cdf.MonSGMA == (MonSGMA == 'sgma')]
 
     print(f"pressure is of type {type(pressure)}")
     print(f"this is the pressure variable {pressure}")
@@ -521,11 +540,12 @@ def update_figure( depth, monAgency, RMP_type, activemon, MonSGMA, pressure, cli
     elif pressure.lower() == 'man':
         print('showing manual')
         ts_file = man.copy()
-    else: #assume it's pressure
+    else:  #assume it's pressure
         print('showing pressure')
         ts_file = press.copy()
 
-    cdf = cdf.loc[cdf.loc[:,'Station Name'].isin(ts_file.loc[:,'Station Name'])]
+    cdf = cdf.loc[cdf.loc[:, 'Station Name'].isin(ts_file.loc[:, 'Station Name'])]
+
     def convert_empty_strings_to_nan(data_frame, column_name):
         # Replace empty strings with NaN in the specified column
         data_frame[column_name] = data_frame[column_name].replace('', np.nan)
@@ -534,52 +554,54 @@ def update_figure( depth, monAgency, RMP_type, activemon, MonSGMA, pressure, cli
     cdf = convert_empty_strings_to_nan(cdf, 'station_longitude')
     cdf = convert_empty_strings_to_nan(cdf, 'station_latitude')
 
-    cdf = cdf.astype({'station_longitude':np.float64,
-                      'station_latitude': np.float64},  errors='ignore')
-    cdf = cdf.dropna(subset = 'station_longitude')
+    cdf = cdf.astype({'station_longitude': np.float64,
+                      'station_latitude': np.float64}, errors='ignore')
+    cdf = cdf.dropna(subset='station_longitude')
 
     if RMP_type == "RMP":
-        cdf = cdf.loc[cdf.loc[:,'MonRMP']]
+        cdf = cdf.loc[cdf.loc[:, 'MonRMP']]
 
     elif RMP_type == "Non-RMP":
         # print('sel non')
         # print(f"shape {cdf.shape}")
         # print(cdf.MonRMP.unique())
-        cdf =  cdf.loc[cdf.loc[:,'MonRMP']==False]
+        cdf = cdf.loc[cdf.loc[:, 'MonRMP'] == False]
         # print(f"shape {cdf.shape}")
 
     # cdf.loc[cdf.loc[:, 'Station Name'].isin(ts_file.loc[:, 'station_name'])]
 
-    print(cdf.loc[:,['station_latitude','station_longitude']].describe())
+    print(cdf.loc[:, ['station_latitude', 'station_longitude']].describe())
     #
     marker_size = 2
     try:
         if pressure.lower() == 'all':
-            print('makng simple map\n'*5)
+            print('makng simple map\n' * 5)
             cdf = cdf.loc[cdf.station_latitude.notnull()]
-            cdf.loc[:,'size'] = marker_size
+            cdf = cdf.loc[cdf.loc[:,'Last Measurement']>nmonths]
+            cdf.loc[:, 'size'] = marker_size
             fig = px.scatter_mapbox(cdf,
                                     lat="station_latitude",
                                     lon="station_longitude",
                                     hover_name="Station Name",
                                     color='Depth_Category',
-                                    size = 'size',
+                                    size='size',
 
                                     hover_data={
                                         # "Elapsed Time": False,
-                                                'station_no': True,
-                                                "station_latitude": False,
-                                                "station_longitude": False,
-                                                "MonAgency":True,
-                                                "size": False,
-                                                "MonSGMASiteCode":True,
-                                                # 'Number of Months Since Last Measurement': False
+                                        'station_no': True,
+                                        "station_latitude": False,
+                                        "station_longitude": False,
+                                        "MonAgency": True,
+                                        "size": False,
+                                        "MonSGMASiteCode": True,
+                                        'Last Measurement': True
                                     },
-            )
+                                    )
 
         else:
             print(f"shape of ts_file is {ts_file.shape}")
             cur = ts_file.loc[ts_file.loc[:, 'Station Name'].isin(cdf.loc[:, 'Station Name'])]
+            cur = cur.loc[cur.loc[:, 'Number of Months Since Last Measurement'] > nmonths]
             print(cur.loc[:, ['station_latitude', 'station_longitude']].describe())
             # cdf = pd.merge(cur, cdf.reset_index(drop = True), left_on= 'Station Name', right_on = "Station Name")
             #
@@ -589,28 +611,29 @@ def update_figure( depth, monAgency, RMP_type, activemon, MonSGMA, pressure, cli
             # print(cur.head().station_longitude.values)
             cur.loc[:, 'size'] = marker_size
 
-            fig = px.scatter_mapbox(cur,  lat="station_latitude",
+            fig = px.scatter_mapbox(cur, lat="station_latitude",
                                     lon="station_longitude",
                                     hover_name="Station Name",
-                                # hover_data=["Elapsed Time",'station_no'],
-                                    color= 'Number of Months Since Last Measurement',
+                                    # hover_data=["Elapsed Time",'station_no'],
+                                    color='Number of Months Since Last Measurement',
                                     # size =  'Number of Months Since Last Measurement',
                                     # size_max= 15,
-                                    size = 'size',
+                                    size='size',
                                     hover_data={"Elapsed Time": True,
                                                 'station_no': True,
                                                 "station_latitude": False,
                                                 "station_longitude": False,
                                                 "MonSGMASiteCode": True,
                                                 "MonAgency": True,
+                                                'size':False,
                                                 'Number of Months Since Last Measurement': True},
-                                     )
+                                    )
 
-            if cdf.shape[1]>10:
+            if cdf.shape[1] > 10:
                 if "Source" in cdf.columns:
-                    cdf = cdf.loc[:,:'Source']
+                    cdf = cdf.loc[:, :'Source']
                 else:
-                    cdf = cdf.iloc[:,:13]
+                    cdf = cdf.iloc[:, :13]
 
             cdf.to_pickle('cur_selection.pickle')
 
@@ -630,7 +653,7 @@ def update_figure( depth, monAgency, RMP_type, activemon, MonSGMA, pressure, cli
                 y=0.95,  # Position on the y-axis (0 to 1)
                 bgcolor="rgba(255,255,255,0.7)",  # Background color with transparency
                 bordercolor="black",  # Border color
-                borderwidth=1  # Border width
+                borderwidth=15  # Border width
             ),
 
         )
@@ -643,15 +666,14 @@ def update_figure( depth, monAgency, RMP_type, activemon, MonSGMA, pressure, cli
         # # Enable scroll zoom explicitly
         # fig.show(config={'scrollZoom': True})
 
-
-
         print('the map figure does work')
     except Exception as e:
         print(e)
         print('\n\nit DOES  fail\n\n')
-        fig =  go.Figure()
+        fig = go.Figure()
 
     return fig
+
 
 @app.callback(
     Output("download-link", "data"),
@@ -665,7 +687,7 @@ def download_data(n_clicks):
     if os.path.exists("cur_selection.pickle"):
         filtered_data = pd.read_pickle("cur_selection.pickle")
     else:
-        filtered_data  = pd.DataFrame()
+        filtered_data = pd.DataFrame()
 
     # Generate CSV content based on filtered data
     csv_string = filtered_data.to_csv(index=False, encoding='utf-8')
@@ -674,4 +696,4 @@ def download_data(n_clicks):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True, port = 8056)
+    app.run_server(debug=True, port=8056)
