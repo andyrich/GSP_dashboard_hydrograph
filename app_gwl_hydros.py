@@ -32,8 +32,12 @@ labels = [str(m) if m in [1, 2, 4, 6, 12, 18] else '' for m in months]
 k = helper.get_kiwis()
 
 
-basins = gpd.read_file(os.path.join("assets","i08_B118_CA_GroundwaterBasins.geojson"))
+basins = gpd.read_file(os.path.join("assets","i08_B118_CA_GroundwaterBasins.geojson")).to_crs(4326)
+basins = basins.loc[basins.Basin_Subbasin_Number.isin(['2-001','2-002.02', "1-055.01"])]
 
+wshed = [gpd.read_file(os.path.join("assets",f"wshed_{x}.geojson")).to_crs(4326) for x in ['SON',"PET",'SRP']]
+wshed = pd.concat(wshed)
+wshed = gpd.GeoDataFrame(wshed, crs = 4326)
 
 
 def get_ts():
@@ -543,7 +547,7 @@ def update_figure(depth, monAgency, RMP_type, activemon, MonSGMA, pressure,
 
     print(cdf.loc[:, ['station_latitude', 'station_longitude']].describe())
     #
-    marker_size = 2
+    marker_size = 1
     try:
         if pressure.lower() == 'all':
             print('makng simple map\n' * 5)
@@ -569,19 +573,15 @@ def update_figure(depth, monAgency, RMP_type, activemon, MonSGMA, pressure,
                                     },
                                     )
 
-            # fig = fig.update_layout(
-            #         mapbox={
-            #             "style": "open-street-map",
-            #             "zoom": 5,
-            #             "layers": [
-            #                 {
-            #                     "source": basins.geometry.to_json(),
-            #                     "below": "traces",
-            #                     "type": "line",
-            #                     "color": "purple",
-            #                     "line": {"width": 1.5},
-            #                 }]
-            #         })
+            fig.update_layout(
+                mapbox={'layers': [{
+                    'source': basins.__geo_interface__,
+                    'type': "line", 'below': "traces", 'color': "black",
+                    'opacity': 1.0
+                }]}
+            )
+
+
 
         else:
             print(f"shape of ts_file is {ts_file.shape}")
@@ -613,6 +613,16 @@ def update_figure(depth, monAgency, RMP_type, activemon, MonSGMA, pressure,
                                                 'size':False,
                                                 'Number of Months Since Last Measurement': True},
                                     )
+            fig.add_trace(go.Choroplethmapbox())
+            fig.update_layout(
+                mapbox={'layers': [{
+                    'source': basins.__geo_interface__,
+                    'type': "line", 'below': "traces", 'color': "black",
+                    'opacity': 1.0
+                }]}
+            )
+
+
 
             if cdf.shape[1] > 10:
                 if "Source" in cdf.columns:
@@ -655,7 +665,20 @@ def update_figure(depth, monAgency, RMP_type, activemon, MonSGMA, pressure,
     except Exception as e:
         print(e)
         print('\n\nit DOES  fail\n\n')
-        fig = go.Figure()
+
+        # Define the latitude and longitude for Santa Rosa, CA
+        latitude = 38.4405
+        longitude = -122.7144
+
+        # Create a scatter mapbox figure centered over Santa Rosa, CA with zoom level 12
+        fig = px.scatter_mapbox(
+            lat=[latitude],
+            lon=[longitude],
+            zoom=12,
+            height=600,
+            width=800,
+            mapbox_style="open-street-map"
+        )
 
     return fig
 
