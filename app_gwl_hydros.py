@@ -13,7 +13,7 @@ import dash.html as html
 # import dash_html_components as html
 import pandas as pd
 import numpy as np
-
+import geopandas as gpd
 import wiski_data_plot_multi
 import wiski_data
 import helper
@@ -28,12 +28,12 @@ server = app.server
 # Create the range of months and labels for slider
 months = list(range(1, 19))
 labels = [str(m) if m in [1, 2, 4, 6, 12, 18] else '' for m in months]
-# df_meas = pd.read_csv(os.path.join('obs_data_for_website.csv'))
-# df_meas.loc[:, 'Timestamp'] = pd.to_datetime(df_meas.loc[:, 'Timestamp'])
 
 k = helper.get_kiwis()
-# pars = k.get_parameter_list(parametertype_name = "Groundw*", return_fields = ['station_name'])
-print('getting timeseries')
+
+
+basins = gpd.read_file(os.path.join("assets","i08_B118_CA_GroundwaterBasins.geojson"))
+
 
 
 def get_ts():
@@ -89,10 +89,10 @@ def get_gw_mon_status(station):
 
     x.loc[:, 'Depth_Category'] = x.loc[:, 'Depth_Category'].fillna('Other')
 
-    x.loc[x.loc[:, 'Depth_Category'].str.contains('Deep'), 'Depth_Category'] = "Deep(>500ft)"
+    x.loc[x.loc[:, 'Depth_Category'].str.contains('Deep'), 'Depth_Category'] = "Deep (>500ft)"
 
     x = x.astype({'LastPressMeas': 'datetime64[ns]',
-                  'LastPressMeas': 'datetime64[ns]'})
+                  'LastManMeas': 'datetime64[ns]'})
 
     rep = "MonSGMA 	MonRMP 	MonCASGEM 	  	ActivPress 	ActiveMon".split()
 
@@ -341,12 +341,12 @@ app.layout = html.Div([
                 options=[
                     {"label": "Shallow", "value": "Shallow (0-200ft)"},
                     {"label": "Medium", "value": "Medium (200-500ft)"},
-                    {"label": "Deep", "value": "Deep(>500ft)"},
+                    {"label": "Deep", "value": "Deep (>500ft)"},
                     {"label": "Unknown", "value": "Other"},
                     {"label": "All", "value": "All"},
                 ],
                 labelStyle={"display": "block"},
-                value=["Shallow (0-200ft)", "Medium (200-500ft)", "Deep(>500ft)"],
+                value=["Shallow (0-200ft)", "Medium (200-500ft)", "Deep (>500ft)"],
             ), ], style={'width': '20%', 'display': 'inline-block', 'verticalAlign': 'top'}),
 
         html.Div([
@@ -357,13 +357,8 @@ app.layout = html.Div([
                 max = 18,
                 marks = {m: f">{str(m)}m" if m in range(0,19,4) else '' for m in months},
                 tooltip={"always_visible": False},
-                # handleLabel={"showCurrentValue": True,"label": "Months"},
                 vertical=False,
-                # verticalHeight='100%',
                 id="slider",
-                # marks = ,
-                # labelStyle={"display": "block"},
-                # value=["Shallow (0-200ft)", "Medium (200-500ft)", "Deep(>500ft)"],
             ), ], style={'width': '20%', 'display': 'inline-block', 'verticalAlign': 'top'}),
 
     ],
@@ -410,7 +405,7 @@ def update_figure(colorscale, n_clicks):
         dfi = pd.DataFrame(columns=["Timestamp", "Manual Measurement", 'name'])
         colorscale = "Son0001"
     else:
-        print('ff' * 30)
+
         print(colorscale)
         colorscale = [i['hovertext'] for i in colorscale['points']]
         print(colorscale)
@@ -573,6 +568,20 @@ def update_figure(depth, monAgency, RMP_type, activemon, MonSGMA, pressure,
                                         'Last Measurement': True
                                     },
                                     )
+
+            # fig = fig.update_layout(
+            #         mapbox={
+            #             "style": "open-street-map",
+            #             "zoom": 5,
+            #             "layers": [
+            #                 {
+            #                     "source": basins.geometry.to_json(),
+            #                     "below": "traces",
+            #                     "type": "line",
+            #                     "color": "purple",
+            #                     "line": {"width": 1.5},
+            #                 }]
+            #         })
 
         else:
             print(f"shape of ts_file is {ts_file.shape}")
