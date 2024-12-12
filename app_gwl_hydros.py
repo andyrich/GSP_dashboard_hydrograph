@@ -35,9 +35,9 @@ k = helper.get_kiwis()
 basins = gpd.read_file(os.path.join("assets","i08_B118_CA_GroundwaterBasins.geojson")).to_crs(4326)
 basins = basins.loc[basins.Basin_Subbasin_Number.isin(['2-001','2-002.02', "1-055.01"])]
 
-wshed = [gpd.read_file(os.path.join("assets",f"wshed_{x}.geojson")).to_crs(4326) for x in ['SON',"PET",'SRP']]
-wshed = pd.concat(wshed)
-wshed = gpd.GeoDataFrame(wshed, crs = 4326)
+# wshed = [gpd.read_file(os.path.join("assets",f"wshed_{x}.geojson")).to_crs(4326) for x in ['SON',"PET",'SRP']]
+# wshed = pd.concat(wshed)
+# wshed = gpd.GeoDataFrame(wshed, crs = 4326)
 
 
 def get_ts():
