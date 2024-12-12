@@ -371,17 +371,11 @@ app.layout = html.Div([
 
     html.Hr(),
 
-    html.Div([
         html.Div([
-            html.Button("Update Map", id="show-map", n_clicks=0), ],
-            style={'width': '20%', 'display': 'inline-block', }),
         html.Div([
-            html.Button("Show Hydrograph", id="show-image", n_clicks=0), ],
+            html.Button("Show Hydrograph(s)", id="show-image", n_clicks=0), ],
             style={'width': '20%', 'display': 'inline-block', }, ),
-        html.Div([
-            html.Button("Update data", id="dataupdate", n_clicks=0), ],
-            style={'width': '20%', 'display': 'inline-block', }),
-        html.Div(id='my-output'),
+
 
         dcc.Graph(id='graph'),
 
@@ -395,24 +389,6 @@ app.layout = html.Div([
 ])
 
 
-@callback(
-    Output(component_id='my-output', component_property='children'),
-    Input("dataupdate", "n_clicks"),
-    prevent_initial_call=True,
-)
-def update_figure(n_clicks):
-    ctx = dash.callback_context
-    if ctx.triggered[0]["prop_id"].split(".")[0] != "dataupdate":
-        # print('preventing update')
-        raise PreventUpdate
-    else:
-        remove()
-        allinfo = get_allstation_via_station_char(reload_from_wiski=True)
-        ts = get_ts()
-        man = get_man()
-        press = get_press()
-
-    return "Done Re-Loading Data"
 
 
 @callback(
@@ -469,11 +445,11 @@ def update_figure(colorscale, n_clicks):
         Input('activemon', 'value'),
         Input('MonSGMA', 'value'),
         Input('pressure', 'value'),
-        Input("show-map", "n_clicks"),
+        # Input("show-map", "n_clicks"),
         Input("slider", "value"),
     ],
 )
-def update_figure(depth, monAgency, RMP_type, activemon, MonSGMA, pressure, clicks,
+def update_figure(depth, monAgency, RMP_type, activemon, MonSGMA, pressure,
                   nmonths):  # Modify the function parameters
     # print(clicks)
     ctx = dash.callback_context
