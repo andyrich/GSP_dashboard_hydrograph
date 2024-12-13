@@ -40,30 +40,6 @@ basins = basins.loc[basins.Basin_Subbasin_Number.isin(['2-001','2-002.02', "1-05
 # wshed = gpd.GeoDataFrame(wshed, crs = 4326)
 
 
-def get_ts():
-    if os.path.exists('ts.pickle'):
-        print('loading ts pickle')
-        ts = pd.read_pickle('ts.pickle')
-    else:
-        print('loading ts from wiski')
-        ts = pd.concat([k.get_timeseries_list(station_name='SRP*',
-                                              parametertype_name="Groundw*",
-                                              return_fields=['station_name', 'coverage', 'stationparameter_name']),
-
-                        k.get_timeseries_list(station_name='Son*',
-                                              parametertype_name="Groundw*",
-                                              return_fields=['station_name', 'coverage', 'stationparameter_name']),
-
-                        k.get_timeseries_list(station_name='PET*',
-                                              parametertype_name="Groundw*",
-                                              return_fields=['station_name', 'coverage', 'stationparameter_name']),
-
-                        k.get_timeseries_list(station_name='LRR*',
-                                              parametertype_name="Groundw*",
-                                              return_fields=['station_name', 'coverage', 'stationparameter_name'])])
-
-        ts.to_pickle('ts.pickle')
-    return ts
 
 
 def get_gw_mon_status(station):
@@ -215,7 +191,6 @@ def get_any_meas_date_info(raw):
 
 ## load for first time
 allinfo = get_allstation_via_station_char(reload_from_wiski=True)
-ts = get_ts()
 man = get_man()
 press = get_press()
 
@@ -588,12 +563,6 @@ def update_figure(depth, monAgency, RMP_type, activemon, MonSGMA, pressure,
             cur = ts_file.loc[ts_file.loc[:, 'Station Name'].isin(cdf.loc[:, 'Station Name'])]
             cur = cur.loc[cur.loc[:, 'Number of Months Since Last Measurement'] > nmonths]
             print(cur.loc[:, ['station_latitude', 'station_longitude']].describe())
-            # cdf = pd.merge(cur, cdf.reset_index(drop = True), left_on= 'Station Name', right_on = "Station Name")
-            #
-            # cdf.loc[:,"Elapsed Time Min"] = cdf.loc[:, "Elapsed Time"].copy()
-            # cdf.loc[cdf.loc[:,"Elapsed Time Min"]<3, "Elapsed Time Min"] = 3
-            # print(cdf.loc[:,"Elapsed Time"].min())
-            # print(cur.head().station_longitude.values)
             cur.loc[:, 'size'] = marker_size
 
             fig = px.scatter_mapbox(cur, lat="station_latitude",

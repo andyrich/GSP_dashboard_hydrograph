@@ -187,8 +187,8 @@ def do_plot_wet(fig):
             fig.add_vrect(x0=ys, x1=ye, line_width=0, fillcolor=colors[row['Type']],
                           layer="below",
                           opacity=0.8,
-                          legendgroup="group2",
-                          # legendgrouptitle_text="Water Year Type",
+                          legendgroup="precip",
+                          legendgrouptitle_text="Water Year Type",
                           name=row['Type'],
                           showlegend=False
                           )
@@ -196,7 +196,7 @@ def do_plot_wet(fig):
             fig.add_vrect(x0=ys, x1=ye, line_width=0, fillcolor=colors[row['Type']],
                           layer="below",
                           opacity=0.8,
-                          legendgroup="group2",
+                          legendgroup="precip",
                           legendgrouptitle_text="Water Year Type",
                           name=row['Type'],
                           showlegend=True
