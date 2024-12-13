@@ -167,12 +167,15 @@ class wiski_plot(object):
             helper.do_plot_wet(fig)
 
         for num, stat in enumerate(self.station_list):
-            self.get_station_pars(remove_pt=False, station=stat)
-            fig = self.plot_gw(stat,number = num, fig = fig)
+            try:
+                self.get_station_pars(remove_pt=False, station=stat)
+                fig = self.plot_gw(stat,number = num, fig = fig)
+            except Exception as e:
+                print(f"failed {stat} because {e}")
 
         return fig
 
-    def plot_gw(self, station, seasonal=True, number = None,
+    def plot_gw(self, station, seasonal=False, number = None,
                 limit_trans2manual_dates=True, remove_pt=False, xlims=None,  fig = None):
         '''
         plot_wet = plot backgorund wet/dry (not implemented)
