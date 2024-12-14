@@ -123,7 +123,7 @@ def map_sites(df, res='Lake Sonoma'):
 
     assert cdf.shape[0]>0, f'shape of sites is {cdf}'
 
-    cdf.loc[:,'size'] = 5
+    cdf.loc[:,'size'] = .5
 
     yes = {x: True if x in ['site_no', 'station_nm', 'site_tp_cd', 'huc_cd', 'begin_date','end_date'] else False for x in cdf.columns}
 
@@ -131,7 +131,7 @@ def map_sites(df, res='Lake Sonoma'):
                             lat="dec_lat_va",
                             lon="dec_long_va",
                             size='size',
-                            hover_name="site_no",
+                            hover_name="station_nm",
                             hover_data=yes
                             )
 
@@ -176,7 +176,6 @@ def stor_table(res="Lake Sonoma"):
     return table_data
 
 
-# App layout
 app.layout = html.Div([
     # First row: Buttons
     html.Div([
@@ -201,8 +200,18 @@ app.layout = html.Div([
 
     # Placeholder figure and table
     dcc.Graph(id="placeholder-figure", figure=get_reservoir_figure_yearly(res="Lake Sonoma")),
-    dcc.Graph(id="table1", figure=stor_table(res='Lake Sonoma')),
-    dcc.Graph(id="sitemap", figure=map_sites(sites, res='Lake Sonoma')),
+
+    # Third row: Table and site map
+    html.Div([
+        html.Div(
+            dcc.Graph(id="table1", figure=stor_table(res='Lake Sonoma')),
+            style={"flex": "0 0 30%"}  # Table takes 30% width
+        ),
+        html.Div(
+            dcc.Graph(id="sitemap", figure=map_sites(sites, res='Lake Sonoma')),
+            style={"flex": "1"}  # Map takes the remaining 70% width
+        ),
+    ], style={"display": "flex", "gap": "10px"}),  # Flexbox layout with spacing
 
     # Dynamic figures
     html.Div(id="dynamic-figures")
