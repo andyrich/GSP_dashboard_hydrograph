@@ -65,12 +65,11 @@ def plot_men(x, stor):
     fig.update_traces(mode="lines", hovertemplate='%{y:,d} <i>af</i>')
     fig.update_xaxes(tickformat="%b %d")
     yearmax = x.loc[:,'Water Year'].max()
-    print(yearmax)
+
     fig.for_each_trace(
         lambda trace: trace.line.update( width=7) if trace.name == f"{yearmax}" else (),
     )
 
-    print(x.head())
     return fig
 
 
@@ -113,8 +112,6 @@ def plot_son(x, stor):
 
                   },)
 
-
-
     fignew.update_layout(hovermode="x")
 
     fignew.add_trace(go.Scatter(x=stor.Date, y=stor.Value, fill='tonexty',
@@ -133,7 +130,7 @@ def plot_son(x, stor):
 def plot_reservoir_yearly(storage_ts, title = "Lake Sonoma Storage"):
     fignew = px.line(storage_ts, x="Timestamp",
                      y="Value",
-                     width=1200, height=600,
+                     # width=1200, height=600,
                 title=title,
                 labels={
                       "dy": "Day of Year",

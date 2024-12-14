@@ -89,7 +89,7 @@ def get_reservoir_figure_timeseries(res="Lake Sonoma"):
 
 
 def plot_timeseries_flows(x, info):
-    print(x.head().reset_index())
+
     fignew = px.line(x.reset_index(), x="Date", y="Q",
                      # color='Water Year',
                      width=1200, height=600,
@@ -214,7 +214,7 @@ app.layout = html.Div([
     # Placeholder figure and table
     dcc.Graph(id="placeholder-figure", figure=get_reservoir_figure_yearly(res="Lake Sonoma")),
 
-    html.H2(f'Sonoma County Observed Precipitation for {today}'),
+    html.H2(f'Observed Precipitation for {today}'),
     dcc.Graph(id="precip", figure=precip_fig.update_precip(dfall=dfall, station="Venado (Near Lake Sonoma)")),
 
     # Third row: Table and site map
