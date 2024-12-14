@@ -240,7 +240,7 @@ app.layout = html.Div([
     Output("dynamic-figures", "children"),
     Output("table1", "figure"),
     Output("sitemap", "figure"),
-    Output('graph', 'precip'),
+    Output('precip', 'figure'),
     Input("btn-lake-sonoma", "n_clicks"),
     Input("btn-lake-mendocino", "n_clicks"),
     Input("btn-pillsbury", "n_clicks"),
