@@ -8,7 +8,9 @@ import reservoir_storage
 import plotly.express as px
 import helper
 import get_stor_change_table
+import precip_fig
 from plotly.subplots import make_subplots
+import get_precip_wy
 
 # Initialize the Dash app
 app = dash.Dash(__name__)
@@ -20,6 +22,17 @@ lake_son_stor = lake_son_stor.reset_index(drop=True)
 act_mendo, stor_mendo = reservoir_storage.get_men()
 act_mendo = act_mendo.reset_index()
 stor_mendo = stor_mendo.reset_index()
+
+
+options = ['Venado (Near Lake Sonoma)',
+           # 'Santa Rosa Airport',
+           'Ukiah Airport',
+           # 'Sonoma (General Vallejo)'
+           ]
+
+
+dfall = get_precip_wy.get_allstations(options=options)
+today = pd.Timestamp.now().strftime('%A, %B %d %Y')
 
 print('act_mendo')
 print(act_mendo.head())
@@ -201,6 +214,9 @@ app.layout = html.Div([
     # Placeholder figure and table
     dcc.Graph(id="placeholder-figure", figure=get_reservoir_figure_yearly(res="Lake Sonoma")),
 
+    html.H2(f'Sonoma County Observed Precipitation for {today}'),
+    dcc.Graph(id="precip", figure=precip_fig.update_precip(dfall=dfall, station="Venado (Near Lake Sonoma)")),
+
     # Third row: Table and site map
     html.Div([
         html.Div(
@@ -224,10 +240,12 @@ app.layout = html.Div([
     Output("dynamic-figures", "children"),
     Output("table1", "figure"),
     Output("sitemap", "figure"),
+    Output('graph', 'precip'),
     Input("btn-lake-sonoma", "n_clicks"),
     Input("btn-lake-mendocino", "n_clicks"),
     Input("btn-pillsbury", "n_clicks"),
-    Input("radio-options", "value")
+    Input("radio-options", "value"),
+    # Input('precipdropdown', 'value')
 )
 def update_dashboard(n_clicks_sonoma, n_clicks_mendocino, n_clicks_berryessa, option):
     selected_lake = "Lake Sonoma"
@@ -247,10 +265,13 @@ def update_dashboard(n_clicks_sonoma, n_clicks_mendocino, n_clicks_berryessa, op
 
     if selected_lake == "Lake Sonoma":
         d = lake_son_flows
+        precip_station = "Venado (Near Lake Sonoma)"
     elif selected_lake == "Lake Mendocino":
         d = lake_men_flows
+        precip_station = 'Ukiah Airport'
     else:
         d = lake_pills_flows
+        precip_station = 'Ukiah Airport'
 
     table = stor_table(res=selected_lake)
 
@@ -268,6 +289,7 @@ def update_dashboard(n_clicks_sonoma, n_clicks_mendocino, n_clicks_berryessa, op
         # figures.append([fig])
         figures.append(dcc.Graph(figure=fig))
 
+    precFig = precip_fig.update_precip(precip_station, dfall)
     # n = len(figures)
     # rows = (n + 1) // 2  # Calculate the number of rows (2 columns per row)
     #
@@ -286,7 +308,7 @@ def update_dashboard(n_clicks_sonoma, n_clicks_mendocino, n_clicks_berryessa, op
 
     #
 
-    return placeholder_figure, figures, table, siteMap
+    return placeholder_figure, figures, table, siteMap, precFig
 
 
 # Run the app
