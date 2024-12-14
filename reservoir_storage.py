@@ -130,6 +130,23 @@ def plot_son(x, stor):
 
     return fignew
 
+def plot_reservoir_yearly(storage_ts, title = "Lake Sonoma Storage"):
+    fignew = px.line(storage_ts, x="Timestamp",
+                     y="Value",
+                     width=1200, height=600,
+                title=title,
+                labels={
+                      "dy": "Day of Year",
+                      "Value": "acre-feet",
+
+                  },)
+
+    fignew.update_layout(hovermode="x")
+    fignew.update_xaxes(tickformat="%y %b")
+    fignew.update_traces(mode="lines", hovertemplate='%{y:,d} <i>af</i>')
+
+    return fignew
+
 def to_WY(date):
 
     """
