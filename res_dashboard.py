@@ -8,6 +8,7 @@ import reservoir_storage
 import plotly.express as px
 import helper
 import get_stor_change_table
+from plotly.subplots import make_subplots
 
 # Initialize the Dash app
 app = dash.Dash(__name__)
@@ -32,9 +33,9 @@ print(lake_son_stor.head())
 sites = pd.read_csv(os.path.join('assets', 'usgs_sites.csv'))
 print(sites.dtypes)
 
-lake_son_usgs = sites.loc[sites.loc[:, 'Lake Sonoma'] == 1]
-lake_men_usgs = sites.loc[sites.loc[:, 'Lake Mendocino'] == 1]
-lake_pills_usgs = sites.loc[sites.loc[:, 'Lake Pillsbury'] == 1]
+lake_son_usgs = sites.loc[sites.loc[:, 'Lake Sonoma'] == 1].head(2)
+lake_men_usgs = sites.loc[sites.loc[:, 'Lake Mendocino'] == 1].head(2)
+lake_pills_usgs = sites.loc[sites.loc[:, 'Lake Pillsbury'] == 1].head(2)
 
 
 def dload(station):
@@ -255,7 +256,26 @@ def update_dashboard(n_clicks_sonoma, n_clicks_mendocino, n_clicks_berryessa, op
         else:
             fig = plot_timeseries_flows(d[station]['flow'], d[station]['info'])
 
+        # figures.append([fig])
         figures.append(dcc.Graph(figure=fig))
+
+    # n = len(figures)
+    # rows = (n + 1) // 2  # Calculate the number of rows (2 columns per row)
+    #
+    # # Create subplot grid
+    # fig = make_subplots(rows=rows, cols=2)
+    #
+    # for idx, plot in enumerate(figures):
+    #     row = idx // 2 + 1
+    #     col = idx % 2 + 1
+    #     for p in plot:
+    #         for trace in p.data:
+    #             print(trace['x'])
+    #             print(trace['y'])
+    #             fig.add_trace((go.Scatter(x=trace['x'], y=trace['y'], name = trace['name'])), row=row, col=col)
+
+
+    #
 
     return placeholder_figure, figures, table, siteMap
 
