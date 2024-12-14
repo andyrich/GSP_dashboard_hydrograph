@@ -205,3 +205,103 @@ def do_plot_wet(fig):
         wytext.extend([row['Type']])
 
     return wytext
+
+
+def download_daily(station, begin_year=1900, begin_month=10, param="00060"):
+    '''
+    download daily streamflow data from usgs
+    for info see: https://waterservices.usgs.gov/rest/DV-Test-Tool.html
+    Args:
+        station: str (eg '11458500')
+        begin_year:
+        param: discharge: "00060_00003"  stage: 00065_00003"
+
+    Returns: flow, info
+
+    '''
+
+    # url = 'https://waterdata.usgs.gov/nwis/dv?cb_00060=on&format=rdb&site_no={:}&referred_module=sw&period=&begin_date={:}-{:}-01'.\
+    # format(station, begin_year, begin_month)
+    url = 'https://waterdata.usgs.gov/nwis/dv?cb_{:}=on&format=rdb&site_no={:}&referred_module=sw&period=&begin_date={:}-{:}-01'. \
+        format(param, station, begin_year, begin_month)
+    top = pd.read_csv(url,
+                      comment='#', sep='\t+', parse_dates=['datetime'], infer_datetime_format=True, )
+    col = [x for x in top.columns if x.endswith(param + "_00003")]
+    print(col)
+    top = top.rename(columns={col[0]: 'Q'})
+
+    top.index = pd.to_datetime(top.datetime, errors='coerce')
+    top['Q'] = pd.to_numeric(top['Q'], errors='coerce')
+    top = top.loc[:, ['Q']]
+    top = top.dropna()
+
+    info = pd.read_html(
+        f"https://waterdata.usgs.gov/nwis/inventory?search_site_no={station}&search_site_no_match_type=exact&format=station_list&group_key=NONE&list_of_search_criteria=search_site_no")
+
+    return top, info[1]
+
+
+
+def water_year(date):
+    '''
+	this returns an integer water year of the date
+	'''
+
+    def wy(date):
+        if date.month < 10:
+            return date.year
+        else:
+            return date.year + 1
+
+    if isinstance(date, pd.Series):
+        return date.apply(wy)
+    if isinstance(date, datetime.datetime):
+        return wy(date)
+    elif isinstance(date, pd.DatetimeIndex):
+        return [wy(i) for i in date]
+    else:
+        import warnings
+        warnings.warn('not a Series/datetime/DatetimeIndex object')
+        # print('not a Series/datetime/DatetimeIndex object')
+        return np.nan
+
+def julian_water_year(wy):
+    '''
+    return days from start of water year, creates pseudo date from start of WY 2020.
+    Args:
+        date: datetimeindex, series, or dataframe
+
+    Returns:
+
+    '''
+    if isinstance(wy, pd.DatetimeIndex):
+        print('converting datetimeindex to df')
+        wy.name = 'Date'
+        wy = pd.DataFrame(wy, columns=['Date'])
+    elif isinstance(wy, pd.Series):
+        wy = wy.to_frame('Date')
+    elif isinstance(wy, pd.DataFrame):
+        print('using index from dataframe to get julian water year date')
+        wy = wy.index
+        wy.name = 'Date'
+        wy = pd.DataFrame(wy, columns=['Date'])
+    else:
+        raise AssertionError(f"type is not supported {type(wy)}")
+
+    if hasattr(wy, 'month'):
+        wy.loc[:, 'month'] = wy.Date.month
+        wy.loc[:, 'year'] = wy.Date.year
+        wy.loc[:, 'day'] = wy.Date.day
+    else:
+        wy.loc[:, 'month'] = wy.Date.dt.month
+        wy.loc[:, 'year'] = wy.Date.dt.year
+        wy.loc[:, 'day'] = wy.Date.dt.day
+
+    c = wy.loc[:, 'month'] < 10
+    wy.loc[:, 'year'] = 2000
+    wy.loc[~c, 'year'] = 1999
+    wy.loc[:, 'WY_date'] = pd.to_datetime(wy.loc[:, ['year', 'month', 'day']])
+
+    wy = wy.loc[:, 'WY_date'].values
+
+    return wy
