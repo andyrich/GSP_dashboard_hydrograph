@@ -74,6 +74,10 @@ def get_reservoir_figure_yearly(res="Lake Sonoma"):
     else:
         fig = go.Figure()
 
+    fig.update_layout(
+        margin={"r": 0, "t": 40, "l": 0, "b": 20},  # Remove margins for better view
+    )
+
     return fig
 
 
@@ -85,6 +89,10 @@ def get_reservoir_figure_timeseries(res="Lake Sonoma"):
     else:
         fig = go.Figure()
 
+    fig.update_layout(
+        margin={"r": 0, "t": 40, "l": 0, "b": 20},  # Remove margins for better view
+    )
+
     return fig
 
 
@@ -92,7 +100,7 @@ def plot_timeseries_flows(x, info):
 
     fignew = px.line(x.reset_index(), x="Date", y="Q",
                      # color='Water Year',
-                     width=1200, height=600,
+                     # width=1200, height=600,
                      title=info.at[0, 'Site Name'],
                      log_y=True,
                      labels={
@@ -104,12 +112,15 @@ def plot_timeseries_flows(x, info):
     fignew.update_layout(hovermode="x")
     fignew.update_xaxes(tickformat="%y %b")
     fignew.update_traces(mode="lines", hovertemplate='%{y:,d} <i>af</i>')
-
+    fignew.update_layout(
+        margin={"r": 0, "t": 40, "l": 0, "b": 20},  # Remove margins for better view
+    )
     return fignew
 
 
 def plot_water_year_flows(x, info):
-    fignew = px.line(x, x="Julian Date", y="Q", color='Water Year', width=1200, height=600,
+    fignew = px.line(x, x="Julian Date", y="Q", color='Water Year',
+                     # width=1200, height=600,
                      title=info.at[0, 'Site Name'],
                      log_y=True,
                      labels={
@@ -122,6 +133,9 @@ def plot_water_year_flows(x, info):
 
     fignew.update_xaxes(tickformat="%b %d")
     fignew.update_traces(mode="lines", hovertemplate='%{y:,d} <i>af</i>')
+    fignew.update_layout(
+        margin={"r": 0, "t": 40, "l": 0, "b": 20},  # Remove margins for better view
+    )
 
     return fignew
 
@@ -209,10 +223,12 @@ app.layout = html.Div([
             value="yearly",
             inline=True
         )
-    ], style={"margin": "10px 0"}),
+    ], style={"display": "flex", "gap": "10px"}),
 
+    html.Div([
     # Placeholder figure and table
     dcc.Graph(id="placeholder-figure", figure=get_reservoir_figure_yearly(res="Lake Sonoma")),
+        ],  style={"margin": "10px 0"}),
 
     html.H2(f'Observed Precipitation for {today}'),
     dcc.Graph(id="precip", figure=precip_fig.update_precip(dfall=dfall, station="Venado (Near Lake Sonoma)")),
