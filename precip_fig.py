@@ -49,7 +49,8 @@ def update_precip(station, dfall, ):
     curr_df = curf_df.query(f"wy>={maxyear}")
 
     fig = px.line(curr_df, x="wy_date", y="Value",
-                color="wy", hover_name="wy",height = 1000,
+                color="wy", hover_name="wy",
+                  height = 800,
                 labels = {"wy_date": "Water Year (October 1 - September 30)",
                 "Value": "Precipitation (Inches)", },
                   title= station)
@@ -117,15 +118,15 @@ def update_precip(station, dfall, ):
 
     # add annotation
 
-    fig.add_annotation(
-        showarrow=False,
-        text=note,
-        font=dict(size=10),
-        xref='x domain',
-        x=0.5,
-        yref='y domain',
-        y=-0.5
-    )
+    # fig.add_annotation(
+    #     showarrow=False,
+    #     text=note,
+    #     font=dict(size=10),
+    #     xref='x domain',
+    #     x=0.5,
+    #     yref='y domain',
+    #     y=-0.5
+    # )
 
     # temp = get_precip_wy.get_group(station, dfall)
     # print('--\n'*3)
@@ -142,7 +143,7 @@ def update_precip(station, dfall, ):
     #         dict(
     #             x=0.5, y=-0.15,  # Position below the plot
     #             xref='paper', yref='paper',  # Relative to the figure's size
-    #             text=f"Data last updated {last_update}",  # Dynamic note
+    #             text=note,  # Dynamic note
     #             showarrow=False,  # No arrow
     #             font=dict(size=12),
     #         )

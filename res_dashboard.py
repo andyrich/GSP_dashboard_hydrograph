@@ -25,9 +25,9 @@ stor_mendo = stor_mendo.reset_index()
 
 
 options = ['Venado (Near Lake Sonoma)',
-           'Santa Rosa Airport',
+           # 'Santa Rosa Airport',
            'Ukiah Airport',
-           'Sonoma (General Vallejo)'
+           # 'Sonoma (General Vallejo)'
            ]
 
 
@@ -239,7 +239,7 @@ app.layout = html.Div([
     ], style={"width": "100%", "margin": "10px 0"}),
 
     # Section for observed precipitation
-    # html.H2(f'Observed Precipitation for {today}'),
+    html.H2(f'Observed Precipitation'),
     dcc.Graph(id="precip", figure=precip_fig.update_precip(dfall=dfall, station="Venado (Near Lake Sonoma)")),
 
     # Third row: Table and site map
@@ -254,7 +254,8 @@ app.layout = html.Div([
         ),
     ], style={"display": "flex", "gap": "10px"}),  # Flexbox layout with spacing
 
-    # Dynamic figures
+    # Dynamic streamflow figures
+    html.H2(f'Observed Streamflow'),
     html.Div(id="dynamic-figures")
 ])
 
