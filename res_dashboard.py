@@ -25,9 +25,9 @@ stor_mendo = stor_mendo.reset_index()
 
 
 options = ['Venado (Near Lake Sonoma)',
-           # 'Santa Rosa Airport',
+           'Santa Rosa Airport',
            'Ukiah Airport',
-           # 'Sonoma (General Vallejo)'
+           'Sonoma (General Vallejo)'
            ]
 
 
@@ -150,7 +150,7 @@ def map_sites(df, res='Lake Sonoma'):
 
     assert cdf.shape[0]>0, f'shape of sites is {cdf}'
 
-    cdf.loc[:,'size'] = .5
+    cdf.loc[:,'size'] = .1
 
     yes = {x: True if x in ['site_no', 'station_nm', 'site_tp_cd', 'huc_cd', 'begin_date','end_date'] else False for x in cdf.columns}
 
@@ -201,36 +201,45 @@ def stor_table(res="Lake Sonoma"):
         return html.Div("No data available", style={"color": "red"})
 
     return table_data
-
-
 app.layout = html.Div([
-    # First row: Buttons
+    # Top row: Reservoir selection and plot type
     html.Div([
-        html.Button("Lake Sonoma", id="btn-lake-sonoma", n_clicks=0),
-        html.Button("Lake Mendocino", id="btn-lake-mendocino", n_clicks=0),
-        html.Button("Lake Pillsbury", id="btn-pillsbury", n_clicks=0),
-    ], style={"display": "flex", "justify-content": "space-around"}),
+        # First column: Reservoir selection
+        html.Div([
+            html.H2('Reservoir Selection:'),
+            html.Div([
+                html.Button("Lake Sonoma", id="btn-lake-sonoma", n_clicks=0),
+                html.Button("Lake Mendocino", id="btn-lake-mendocino", n_clicks=0),
+                html.Button("Lake Pillsbury", id="btn-pillsbury", n_clicks=0),
+            ], style={"display": "flex", "justify-content": "flex-start", "gap": "10px"})
+        ], style={"flex": "1"}),
 
-    # Second row: Radio options
+        # Second column: Plot type
+        html.Div([
+            html.H2('Plot type:'),
+            dcc.RadioItems(
+                id="radio-options",
+                options=[
+                    {"label": "Yearly", "value": "yearly"},
+                    {"label": "Time Series", "value": "time_series"},
+                    {"label": "Peaks", "value": "peaks"}
+                ],
+                value="yearly",
+                inline=True
+            )
+        ], style={"flex": "1"})
+    ], style={"display": "flex", "gap": "20px", "align-items": "center"}),
+
+    # First plot: Takes the full width of the row
     html.Div([
-        dcc.RadioItems(
-            id="radio-options",
-            options=[
-                {"label": "Yearly", "value": "yearly"},
-                {"label": "Time Series", "value": "time_series"},
-                {"label": "Peaks", "value": "peaks"}
-            ],
-            value="yearly",
-            inline=True
+        dcc.Graph(
+            id="placeholder-figure",
+            figure=get_reservoir_figure_yearly(res="Lake Sonoma")
         )
-    ], style={"display": "flex", "gap": "10px"}),
+    ], style={"width": "100%", "margin": "10px 0"}),
 
-    html.Div([
-    # Placeholder figure and table
-    dcc.Graph(id="placeholder-figure", figure=get_reservoir_figure_yearly(res="Lake Sonoma")),
-        ],  style={"margin": "10px 0"}),
-
-    html.H2(f'Observed Precipitation for {today}'),
+    # Section for observed precipitation
+    # html.H2(f'Observed Precipitation for {today}'),
     dcc.Graph(id="precip", figure=precip_fig.update_precip(dfall=dfall, station="Venado (Near Lake Sonoma)")),
 
     # Third row: Table and site map
@@ -248,6 +257,7 @@ app.layout = html.Div([
     # Dynamic figures
     html.Div(id="dynamic-figures")
 ])
+
 
 
 # Callbacks

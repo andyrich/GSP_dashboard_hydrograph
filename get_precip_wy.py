@@ -10,25 +10,10 @@ ts_ids = {'Venado (Near Lake Sonoma)': "1964010",
 
 def get_precip(ts_i, raw = False):
 
-
     ts = ts_ids[ts_i]
 
     k = helper.get_kiwis()
     tab = k.get_timeseries_values(ts_id = ts, timezone = 'GMT-7',**{'from':'1/1/2014'},)
-    print(tab)
-    # t = r"https://www2.kisters.net/sonomacountygroundwater/KiWIS/KiWIS?service=kisters&type=queryServices&request=getTimeseriesValues&datasource=0&format=csv&ts_id={:}&from=1990-01-01&"
-    #
-    # cer_file_path = "kisters-net-chain.pem"
-    #
-    # # urlData = requests.get(t, verify = cer_file_path).content
-    # # print(io.StringIO(urlData.decode('utf-8')))
-    # url = t.format(ts)
-    # urlData = requests.get(url, verify = cer_file_path).content
-    # # print(io.StringIO(urlData))
-    # tab = pd.read_csv(io.StringIO(urlData.decode('utf-8')), sep=';', header=[2])
-
-
-    # tab = pd.read_csv(url, sep=';', header=[2])
 
     if tab.shape[0] ==0:
         return None
@@ -46,7 +31,7 @@ def get_precip(ts_i, raw = False):
 
     tab = tab.set_index('Date', drop=True)
     # tab.index = pd.to_datetime(tab.index).tz_convert("-08:00").tz_localize(None)
-    print(tab.head())
+
     tab = tab.resample("1D").mean()
     tab.loc[:, 'wy'] = helper.water_year(tab.index)
     tab.loc[:, 'wy_date'] = helper.julian_water_year(tab.reset_index().loc[:, 'Date'])

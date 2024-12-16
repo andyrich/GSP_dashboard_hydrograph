@@ -38,7 +38,7 @@ def update_precip(station, dfall, ):
     filtered_df = df.copy()
     current_year = pd.Timestamp.now().year
     current_year = current_year if pd.Timestamp.now().month<10 else current_year+1
-    maxyear = current_year - 7
+    maxyear = current_year - 10
     # cur_year = pd.np.arange(maxyear,2030,1)
 
     xmind, xmaxd, extremes = get_precip_wy.get_station_min_max(df)
@@ -127,6 +127,28 @@ def update_precip(station, dfall, ):
         y=-0.5
     )
 
+    # temp = get_precip_wy.get_group(station, dfall)
+    # print('--\n'*3)
+    # print(temp.columns)
+    # print(temp.head(3))
+    #
+    #
+    # # Calculate the latest update date
+    # last_update = df['date'].max().strftime('%Y-%m-%d')
+    #
+    # # Add the note below the figure
+    # fig.update_layout(
+    #     annotations=[
+    #         dict(
+    #             x=0.5, y=-0.15,  # Position below the plot
+    #             xref='paper', yref='paper',  # Relative to the figure's size
+    #             text=f"Data last updated {last_update}",  # Dynamic note
+    #             showarrow=False,  # No arrow
+    #             font=dict(size=12),
+    #         )
+    #     ],
+    #     margin=dict(t=50, b=100),  # Adjust bottom margin for the note
+    # )
     # fig.add_annotation(dict(font=dict(color='black', size=10),
     #                         x=0,
     #                         y=-0.12,
