@@ -17,6 +17,8 @@ import plot_usgs_flows
 # Initialize the Dash app
 app = dash.Dash(__name__)
 
+lake_son_flows, lake_men_flows, lake_pills_flows = plot_usgs_flows.load()
+
 lake_son_, lake_son_stor = reservoir_storage.get_son()
 lake_son_ = lake_son_.reset_index()
 lake_son_stor = lake_son_stor.reset_index(drop=True)
@@ -25,7 +27,7 @@ act_mendo, stor_mendo = reservoir_storage.get_men()
 act_mendo = act_mendo.reset_index()
 stor_mendo = stor_mendo.reset_index()
 
-
+#data to load for the precip
 options = ['Venado (Near Lake Sonoma)',
            # 'Santa Rosa Airport',
            'Ukiah Airport',
@@ -46,29 +48,14 @@ print('lake_son_stor')
 print(lake_son_stor.head())
 
 sites = pd.read_csv(os.path.join('assets', 'usgs_sites.csv'))
-print(sites.dtypes)
-
 lake_son_usgs = sites.loc[sites.loc[:, 'Lake Sonoma'] == 1]
 lake_men_usgs = sites.loc[sites.loc[:, 'Lake Mendocino'] == 1]
 lake_pills_usgs = sites.loc[sites.loc[:, 'Lake Pillsbury'] == 1]
 
-lake_son_flows, lake_men_flows, lake_pills_flows = plot_usgs_flows.load()
-#
-# def dload(station):
-#     flow, info = helper.download_daily(station, begin_year=2018)
-#
-#     flow.loc[:, 'Julian Date'] = helper.julian_water_year(flow.index)
-#     flow.loc[:, 'Water Year'] = helper.water_year(flow.index)
-#
-#     return {'flow': flow, 'info': info}
-#
-# # load usgs flows
-# lake_son_flows = {x: dload(x) for x in lake_son_usgs.site_no.unique()}
-# lake_men_flows = {x: dload(x) for x in lake_men_usgs.site_no.unique()}
-# lake_pills_flows = {x: dload(x) for x in lake_pills_usgs.site_no.unique()}
 
-# load reservoir outflos
-# men_outflow, son_outflow = plot_outflows.load_data()
+
+#get outflows
+lake_son_outflows, lake_men_outflows = plot_outflows.load_data()
 
 def get_reservoir_figure_yearly(res="Lake Sonoma"):
     if res.lower() == "lake sonoma":
@@ -150,9 +137,7 @@ app.layout = html.Div([
         )
     ], style={"width": "100%", "margin": "10px 0"}),
 
-    # Section for observed precipitation
-    html.H2(f'Observed Precipitation'),
-    dcc.Graph(id="precip", figure=precip_fig.update_precip(dfall=dfall, station="Venado (Near Lake Sonoma)")),
+
 
     # Third row: Table and site map
     html.Div([
@@ -165,6 +150,18 @@ app.layout = html.Div([
             style={"flex": "1"}  # Map takes the remaining 70% width
         ),
     ], style={"display": "flex", "gap": "10px"}),  # Flexbox layout with spacing
+
+    # Third row: Table and site map
+    html.Div([
+        html.Div(
+            dcc.Graph(id="outflows", figure=plot_outflows.plot(lake_son_outflows, title = 'Lake Sonoma Outflows', option= "yearly")),
+            style={"flex": "1"}  # Map takes the remaining 70% width
+        ),
+    ], style={"display": "flex", "gap": "10px"}),  # Flexbox layout with spacing
+
+    # Section for observed precipitation
+    html.H2(f'Observed Precipitation'),
+    dcc.Graph(id="precip", figure=precip_fig.update_precip(dfall=dfall, station="Venado (Near Lake Sonoma)")),
 
     # Dynamic streamflow figures
     html.H2(f'Observed Streamflow'),
@@ -180,6 +177,7 @@ app.layout = html.Div([
     Output("table1", "figure"),
     Output("sitemap", "figure"),
     Output('precip', 'figure'),
+Output('outflows', 'figure'),
     Input("btn-lake-sonoma", "n_clicks"),
     Input("btn-lake-mendocino", "n_clicks"),
     Input("btn-pillsbury", "n_clicks"),
@@ -205,16 +203,21 @@ def update_dashboard(n_clicks_sonoma, n_clicks_mendocino, n_clicks_berryessa, op
     if selected_lake == "Lake Sonoma":
         d = lake_son_flows
         precip_station = "Venado (Near Lake Sonoma)"
+        out = lake_son_outflows
     elif selected_lake == "Lake Mendocino":
         d = lake_men_flows
         precip_station = 'Ukiah Airport'
+        out = lake_men_outflows
     else:
         d = lake_pills_flows
         precip_station = 'Ukiah Airport'
+        out = lake_son_outflows
 
     table = stor_table(res=selected_lake)
 
     siteMap = helper.map_sites(sites, res=selected_lake)
+
+    outFlows = plot_outflows.plot(out, title= f"{selected_lake} Outflows", option = option)
 
     # Placeholder logic for dynamic figures
     figures = []
@@ -247,7 +250,7 @@ def update_dashboard(n_clicks_sonoma, n_clicks_mendocino, n_clicks_berryessa, op
 
     #
 
-    return placeholder_figure, figures, table, siteMap, precFig
+    return placeholder_figure, figures, table, siteMap, precFig, outFlows
 
 
 # Run the app

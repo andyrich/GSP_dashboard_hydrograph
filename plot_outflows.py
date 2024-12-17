@@ -1,5 +1,6 @@
 import helper
 import plotly.express as px
+import plotly.graph_objects as go
 
 def load_data():
     k = helper.get_kiwis()
@@ -9,16 +10,18 @@ def load_data():
     son_outflow.index = helper.tz_fix(son_outflow)
     son_outflow = son_outflow.resample("1D").mean()
 
-    son_outflow.loc[:, 'Water Year'] = helper.water_year(son_outflow)
+    son_outflow.loc[:, 'Water Year'] = helper.water_year(son_outflow.index)
     son_outflow.loc[:, 'Julian Date'] = helper.julian_water_year(son_outflow)
-
     son_outflow = son_outflow.reset_index()
+
+    print('outflow\n'*10)
+    print(son_outflow.head())
 
     men_outflow = k.get_timeseries_values(ts_id=50966010, **{'from': '10/1/2014', 'timezone': "GMT+7"})
     men_outflow.index = helper.tz_fix(men_outflow)
     men_outflow = men_outflow.resample("1D").mean()
 
-    men_outflow.loc[:, 'Water Year'] = helper.water_year(men_outflow)
+    men_outflow.loc[:, 'Water Year'] = helper.water_year(men_outflow.index)
     men_outflow.loc[:, 'Julian Date'] = helper.julian_water_year(men_outflow)
     men_outflow = men_outflow.reset_index()
 
@@ -29,7 +32,7 @@ def load_data():
 
 def plot_timeseries_flows(x, title):
 
-    fignew = px.line(x.reset_index(), x="Timestamp", y="Value",
+    fignew = px.line(x, x="Date", y="Value",
                      # color='Water Year',
                      # width=1200, height=600,
                      title=title,
@@ -74,3 +77,14 @@ def plot_water_year_flows(x, title):
     )
 
     return fignew
+
+def plot(df, title, option):
+
+    if option =='yearly':
+        fig = plot_water_year_flows(df, title)
+    elif option == 'time_series':
+        fig = plot_timeseries_flows(df, title)
+    else:
+        fig = go.Figure(title="Not Done")
+
+    return fig
