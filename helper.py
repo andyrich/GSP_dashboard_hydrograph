@@ -1,10 +1,11 @@
 import os
 import requests
 from kiwis_pie import KIWIS
-from calendar import monthrange
+import plotly.express as px
 import datetime
 import pandas as pd
 import numpy as np
+import plotly.graph_objects as go
 
 
 def wiski_request_ssl(url):
@@ -163,6 +164,12 @@ def get_wl_smcs(stats = None, isw = False):
 
     return MT, MO
 
+
+def tz_fix(df):
+    '''when you import a wiski timeseries, it is in UTZ. this converts it to local time'''
+
+    return pd.to_datetime(df.index).tz_convert("-08:00").tz_localize(None)
+
 def do_plot_wet(fig):
     dfwet = pd.read_csv('SRP_SON_PET_water_types.csv', index_col=[0])
 
@@ -305,3 +312,54 @@ def julian_water_year(wy):
     wy = wy.loc[:, 'WY_date'].values
 
     return wy
+
+
+def map_sites(df, res='Lake Sonoma'):
+
+    location = {"Lake Sonoma":(38.717799, -123.010034),
+     "Lake Mendocino": (39.202599, -123.175258),
+     "Lake Pillsbury": (39.408070, -122.954985)}
+
+    cdf = df.loc[df.loc[:, res] == 1]
+
+    assert cdf.shape[0]>0, f'shape of sites is {cdf}'
+
+    cdf.loc[:,'size'] = .1
+
+    yes = {x: True if x in ['site_no', 'station_nm', 'site_tp_cd', 'huc_cd', 'begin_date','end_date'] else False for x in cdf.columns}
+
+    fig = px.scatter_mapbox(cdf,
+                            lat="dec_lat_va",
+                            lon="dec_long_va",
+                            size='size',
+                            hover_name="station_nm",
+                            hover_data=yes
+                            )
+
+    # Add the "like" symbol (e.g., heart emoji) and name
+    fig.add_trace(go.Scattermapbox(
+        lat=[location[res][0]],
+        lon=[location[res][1]],
+        mode='markers+text',
+        marker=go.scattermapbox.Marker(size=14, symbol='circle', color='blue'),
+        text=[res],
+        textposition="top right",
+        name=res
+    ))
+
+        # Add mapbox style and enable scroll zoom
+    fig.update_layout(
+        mapbox_style="open-street-map",  # Example map style, you can change it
+        mapbox_zoom=8,  # Adjust initial zoom level
+        # clickmode="event+select",
+        mapbox_center={"lat": cdf['dec_lat_va'].mean(), "lon": cdf['dec_long_va'].mean()},
+    )
+
+    fig.update_layout(
+        dragmode="pan",  # Enables panning
+        margin={"r": 0, "t": 0, "l": 0, "b": 0},  # Remove margins for better view
+    )
+
+
+
+    return fig
