@@ -165,7 +165,7 @@ app.layout = html.Div([
 
     # Dynamic streamflow figures
     html.H2(f'Observed Streamflow'),
-    html.Div(id="dynamic-figures")
+    dcc.Graph(id="dynamic-figures", figure = go.Figure())
 ])
 
 
@@ -173,7 +173,7 @@ app.layout = html.Div([
 # Callbacks
 @app.callback(
     Output("placeholder-figure", "figure"),
-    Output("dynamic-figures", "children"),
+    Output("dynamic-figures", "figure"),
     Output("table1", "figure"),
     Output("sitemap", "figure"),
     Output('precip', 'figure'),
@@ -219,19 +219,12 @@ def update_dashboard(n_clicks_sonoma, n_clicks_mendocino, n_clicks_berryessa, op
 
     outFlows = plot_outflows.plot(out, title= f"{selected_lake} Outflows", option = option)
 
-    # Placeholder logic for dynamic figures
-    figures = []
-    for station in d.keys():
-
-        if option == 'yearly':
-            fig = plot_usgs_flows.plot_water_year_flows(d[station]['flow'], d[station]['info'])
-        else:
-            fig = plot_usgs_flows.plot_timeseries_flows(d[station]['flow'], d[station]['info'])
-
-        # figures.append([fig])
-        figures.append(dcc.Graph(figure=fig))
-
+    subplots = plot_usgs_flows.plot_all(dict_of_stations=d,option = option)
+    # subplots = [subplots]
+    # subplots = go.Figure()
     precFig = precip_fig.update_precip(precip_station, dfall)
+
+    print("done making all plots\n"*10)
     # n = len(figures)
     # rows = (n + 1) // 2  # Calculate the number of rows (2 columns per row)
     #
@@ -250,7 +243,7 @@ def update_dashboard(n_clicks_sonoma, n_clicks_mendocino, n_clicks_berryessa, op
 
     #
 
-    return placeholder_figure, figures, table, siteMap, precFig, outFlows
+    return placeholder_figure, subplots, table, siteMap, precFig, outFlows
 
 
 # Run the app
