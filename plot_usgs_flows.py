@@ -17,7 +17,7 @@ def load():
         return {'flow': flow, 'info': info}
 
     sites = pd.read_csv(os.path.join('assets', 'usgs_sites.csv'))
-    print(sites.dtypes)
+
 
     lake_son_usgs = sites.loc[sites.loc[:, 'Lake Sonoma'] == 1]
     lake_men_usgs = sites.loc[sites.loc[:, 'Lake Mendocino'] == 1]
@@ -137,7 +137,7 @@ def plot_all(dict_of_stations, option):
                                 title="Julian Date",
                                  row = row, col = col
                              )
-            print('returning yearly')
+
             # Customize subplot layout
             fig.update_layout(height=600 * rows )
 

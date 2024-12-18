@@ -5,7 +5,6 @@ import plotly.graph_objects as go
 def load_data():
     k = helper.get_kiwis()
 
-
     son_outflow = k.get_timeseries_values(ts_id=50966010, **{'from': '10/1/2014', 'timezone': "GMT+7"})
     son_outflow.index = helper.tz_fix(son_outflow)
     son_outflow = son_outflow.resample("1D").mean()
@@ -13,9 +12,6 @@ def load_data():
     son_outflow.loc[:, 'Water Year'] = helper.water_year(son_outflow.index)
     son_outflow.loc[:, 'Julian Date'] = helper.julian_water_year(son_outflow)
     son_outflow = son_outflow.reset_index()
-
-    print('outflow\n'*10)
-    print(son_outflow.head())
 
     men_outflow = k.get_timeseries_values(ts_id=50966010, **{'from': '10/1/2014', 'timezone': "GMT+7"})
     men_outflow.index = helper.tz_fix(men_outflow)
