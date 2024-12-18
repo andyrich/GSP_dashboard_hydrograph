@@ -246,6 +246,7 @@ def update_dashboard(n_clicks_sonoma, n_clicks_mendocino, n_clicks_berryessa, op
     return placeholder_figure, subplots, table, siteMap, precFig, outFlows
 
 
+
 # Run the app
 if __name__ == "__main__":
     app.run_server(debug=True)

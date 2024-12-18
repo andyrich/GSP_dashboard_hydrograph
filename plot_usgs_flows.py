@@ -4,6 +4,8 @@ import helper
 import pandas as pd
 from plotly.subplots import make_subplots
 import os
+import numpy as np
+import plotly.colors
 
 def load():
     def dload(station):
@@ -38,6 +40,7 @@ def plot_timeseries_flows(x, title):
         y=x["Q"],
         mode="lines",
         name=title,
+        # line=dict(color=color),
         hovertemplate='%{y:,d} <i>af</i>',
     )
 
@@ -56,25 +59,28 @@ def plot_timeseries_flows(x, title):
     )
     return trace, layout
 
-def plot_water_year_flows(x, title):
+def plot_water_year_flows(x, title, colors = None, idx = 0):
     # Extract the maximum water year for trace customization
     yearmax = x["Water Year"].max()
 
     # Create a scatter plot for the water year flows
     traces = []
     for water_year in x["Water Year"].unique():
+        # name = str(water_year) if idx == 0 else None
+        color = colors[water_year]
         filtered_data = x[x["Water Year"] == water_year]
         traces.append(go.Scatter(
             x=filtered_data["Julian Date"],
             y=filtered_data["Q"],
             mode="lines",
             name=str(water_year),
-            line=dict(width=7 if water_year == yearmax else 2),  # Highlight the max year
+            line = dict(color=color),
+            showlegend= idx == 0,
+            # line=dict(width=7 if water_year == yearmax else 2),  # Highlight the max year
             hovertemplate='%{y:,d} <i>af</i>',
-        ))
-        print(water_year)
 
-    print('done')
+        ))
+
     layout = go.Layout(
         title=title,
         # log_y=True,
@@ -92,62 +98,60 @@ def plot_water_year_flows(x, title):
 
 
 
+
 def plot_all(dict_of_stations, option):
 
     n = len(dict_of_stations.keys())
     rows = (n + 1) // 2  # Calculate the number of rows (2 columns per row)
 
+    cur_year = pd.to_datetime('now').year+2
+    # Example
+    n = np.arange(2014, cur_year)
+    colors = get_plotly_colors_discrete(len(n))
+    colors = dict(zip(n,colors))
+
     # Create subplot grid
-    fig = make_subplots(rows=rows, cols=2, subplot_titles="Observed Streamflow")
+    fig = make_subplots(rows=rows, cols=2)
 
     for idx, station in enumerate(dict_of_stations.keys()):
         row = idx // 2 + 1
         col = idx % 2 + 1
 
-    # for station in dict_of_stations.keys():
+        # for station in dict_of_stations.keys():
 
         if option == 'yearly':
-            print('plotting yearly')
-            # Add water year flows plot
-            water_year_traces, _ = plot_water_year_flows(dict_of_stations[station]['flow'],  dict_of_stations[station]['info']['Site Name'].values[0])
-            print('--timeseries_trace---\n'*5)
-            print(water_year_traces)
-            print(type(water_year_traces))
-            for trace in water_year_traces:
-                print('--trace---\n' * 5)
-                print(trace)
-                print(type(trace))
 
+            # Add water year flows plot
+            water_year_traces, _ = plot_water_year_flows(dict_of_stations[station]['flow'],
+                                                         dict_of_stations[station]['info']['Site Name'].values[0],
+                                                         colors = colors, idx = idx)
+            for trace in water_year_traces:
                 fig.add_trace(trace, row=row, col=col)
 
-
+            fig.update_yaxes(type="log", row=row, col=col)
 
         else:
             # Add timeseries flows plot
-            timeseries_trace, _ = plot_timeseries_flows(dict_of_stations[station]['flow'], dict_of_stations[station]['info']['Site Name'].values[0])
-            print('--timeseriestrace---\n'*5)
-            print(timeseries_trace)
-            print(type(timeseries_trace))
-            fig.add_trace(timeseries_trace, row=row, col=col)
+            timeseries_trace, _ = plot_timeseries_flows(dict_of_stations[station]['flow'],
+                                                        dict_of_stations[station]['info']['Site Name'].values[0])
+            fig = go.Figure()
+            fig.add_trace(timeseries_trace)
+            fig.update_yaxes(type="log")
 
-        fig.update_yaxes(type="log", row=row, col=col)
 
         print('returning yearly')
-        # # Customize subplot layout
-        # fig.update_layout(
-        #     height=600,
-        #     width=800,
-        #     title_text="Side By Side Subplots",
-        # )
+        # Customize subplot layout
+        fig.update_layout(
+            height=600*rows,
+            # width="100%",
+            # title_text="Side By Side Subplots",
+        )
 
     return fig
 
-    # # Placeholder logic for dynamic figures
-    #
-    # for station in dict_of_stations.keys():
-    #
-    #     if option == 'yearly':
-    #         fig = plot_water_year_flows(dict_of_stations[station]['flow'], dict_of_stations[station]['info'])
-    #     else:
-    #         fig = plot_timeseries_flows(dict_of_stations[station]['flow'], dict_of_stations[station]['info'])
-    #
+
+
+def get_plotly_colors_discrete(n):
+    palette = plotly.colors.DEFAULT_PLOTLY_COLORS
+    return [palette[i % len(palette)] for i in range(n)]
+
