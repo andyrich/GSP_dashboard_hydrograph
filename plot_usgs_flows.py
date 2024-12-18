@@ -110,8 +110,11 @@ def plot_all(dict_of_stations, option):
     colors = get_plotly_colors_discrete(len(n))
     colors = dict(zip(n,colors))
 
-    # Create subplot grid
-    fig = make_subplots(rows=rows, cols=2)
+    if option=='yearly':
+        # Create subplot grid
+        fig = make_subplots(rows=rows, cols=2)
+    else:
+        fig = go.Figure()
 
     for idx, station in enumerate(dict_of_stations.keys()):
         row = idx // 2 + 1
@@ -129,23 +132,26 @@ def plot_all(dict_of_stations, option):
                 fig.add_trace(trace, row=row, col=col)
 
             fig.update_yaxes(type="log", row=row, col=col)
+            fig.update_xaxes(
+                                tickformat="%b %d",
+                                title="Julian Date",
+                                 row = row, col = col
+                             )
+            print('returning yearly')
+            # Customize subplot layout
+            fig.update_layout(height=600 * rows )
 
         else:
             # Add timeseries flows plot
             timeseries_trace, _ = plot_timeseries_flows(dict_of_stations[station]['flow'],
                                                         dict_of_stations[station]['info']['Site Name'].values[0])
-            fig = go.Figure()
+
             fig.add_trace(timeseries_trace)
             fig.update_yaxes(type="log")
+            fig.update_layout(height=600)
 
 
-        print('returning yearly')
-        # Customize subplot layout
-        fig.update_layout(
-            height=600*rows,
-            # width="100%",
-            # title_text="Side By Side Subplots",
-        )
+
 
     return fig
 
